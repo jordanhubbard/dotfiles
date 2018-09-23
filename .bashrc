@@ -206,3 +206,4 @@ find-receipt() {
 
 shopt -s histappend
 use-fancy-prompt    
+set-environment-vars
