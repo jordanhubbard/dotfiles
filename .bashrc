@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Version: 1.5.2
+# Version: 1.5.3
 # This version is the goodest one.
 # Changelog:
 # 2018/08/14: Made portupdate also accept optional flags (like -v)
@@ -40,7 +40,6 @@ set-environment-vars() {
 
 	alias fetch='curl -C - -O $*'
 	alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Resources/jsc'
-	setenv SVN_EDITOR vi
 
 	# Now do general convenience stuff.
 	alias pu=pushd
@@ -94,6 +93,11 @@ psg()	{
 aptupdate() {
 	sudo apt update && sudo apt upgrade
 	sudo depmod
+}
+
+remote-tmux() {
+	_host=$1; shift
+	ssh ${_host} tmux new-session -d sh "$*"
 }
 
 portupdate() {
