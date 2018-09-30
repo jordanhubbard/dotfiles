@@ -23,8 +23,9 @@ set-environment-vars() {
 	setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:$HOME/Bin
 	setenv MANPATH /usr/share/man
 	setenv INFOPATH /usr/share/info
-	export ERL_AFLAGS="-kernel shell_history enabled"
-	export HISTCONTROL=ignoredups:erasedups
+	setenv ERL_AFLAGS "-kernel shell_history enabled"
+	setenv ELIXIR_EDITOR emacs
+	setenv HISTCONTROL ignoredups:erasedups
 
 	COOLDIRS="/usr/local /opt/X11 /opt/local $HOME/.cargo"
 
