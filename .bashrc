@@ -9,6 +9,7 @@
 # 2018/08/20: Change default .history variables.
 # 2018/09/20: Make port selfupdate unconditional to account for rsync'd sources
 # 2018/09/20: Add cargo to path, fix MANPATH settings.
+# 2018/10/31: Add sprungit function for sending things to sprunge
 
 setenv() {
 	_SYM=$1; shift; export $_SYM="$*"
@@ -53,6 +54,15 @@ reachable() {
 	[ $# -lt 1 ] && echo "Usage: reachable host|ip" && return 1
 	ping -c 1 -i 1 -t 1 "$1" > /dev/null 2>&1 && return 0
 	return 2
+}
+
+sprungeit() {
+	[ $# -lt 1 ] && echo "Usage: sprungit file | text" && return 1
+	if [ -f $1 ]; then
+		cat $1 | curl -F 'sprunge=<-' http://sprunge.us
+	else
+		echo "$*" | curl -F 'sprunge=<-' http://sprunge.us
+	fi
 }
 
 # Docker / Kubernetes things
