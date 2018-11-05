@@ -9,7 +9,7 @@
 # 2018/08/20: Change default .history variables.
 # 2018/09/20: Make port selfupdate unconditional to account for rsync'd sources
 # 2018/09/20: Add cargo to path, fix MANPATH settings.
-# 2018/10/31: Add sprungit function for sending things to sprunge
+# 2018/10/20: Moved to github - See github changelog for information past here
 
 setenv() {
 	_SYM=$1; shift; export $_SYM="$*"
@@ -216,5 +216,5 @@ find-receipt() {
 }
 
 shopt -s histappend
-use-fancy-prompt    
+[ "${TERM}" == "dumb" ] || use-fancy-prompt    
 set-environment-vars
