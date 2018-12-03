@@ -1,12 +1,10 @@
 ;;; elixir-mode-autoloads.el --- automatically extracted autoloads
 ;;
 ;;; Code:
-
-(add-to-list 'load-path (directory-file-name
-                         (or (file-name-directory #$) (car load-path))))
-
+(add-to-list 'load-path (directory-file-name (or (file-name-directory #$) (car load-path))))
 
-;;;### (autoloads nil "elixir-format" "elixir-format.el" (0 0 0 0))
+;;;### (autoloads nil "elixir-format" "elixir-format.el" (23530 26340
+;;;;;;  826112 133000))
 ;;; Generated autoloads from elixir-format.el
 
 (autoload 'elixir-format "elixir-format" "\
@@ -14,11 +12,10 @@
 
 \(fn &optional CALLED-INTERACTIVELY-P)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "elixir-format" '("elixir-format-")))
-
 ;;;***
 
-;;;### (autoloads nil "elixir-mode" "elixir-mode.el" (0 0 0 0))
+;;;### (autoloads nil "elixir-mode" "elixir-mode.el" (23530 26340
+;;;;;;  822468 915000))
 ;;; Generated autoloads from elixir-mode.el
 
 (autoload 'elixir-mode-open-github "elixir-mode" "\
@@ -69,18 +66,10 @@ Major mode for editing Elixir code.
 
 (add-to-list 'auto-mode-alist '("\\.exs\\'" . elixir-mode))
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "elixir-mode" '("elixir-")))
-
 ;;;***
 
-;;;### (autoloads nil "elixir-smie" "elixir-smie.el" (0 0 0 0))
-;;; Generated autoloads from elixir-smie.el
-
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "elixir-smie" '("elixir-" "verbose-elixir-smie-rules")))
-
-;;;***
-
-;;;### (autoloads nil nil ("elixir-mode-pkg.el") (0 0 0 0))
+;;;### (autoloads nil nil ("elixir-mode-pkg.el" "elixir-smie.el")
+;;;;;;  (23530 26340 824972 126000))
 
 ;;;***
 
@@ -88,6 +77,5 @@ Major mode for editing Elixir code.
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
 ;; End:
 ;;; elixir-mode-autoloads.el ends here
