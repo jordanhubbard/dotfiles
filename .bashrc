@@ -28,8 +28,9 @@ set-environment-vars() {
 	setenv ELIXIR_EDITOR emacs
 	setenv HISTCONTROL ignoredups:erasedups
 
-	COOLDIRS="/usr/local /opt/X11 /opt/local $HOME/.cargo"
-
+	# All path setting magic goes here.
+	[ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
+	COOLDIRS="/opt/local /opt/X11 /usr/local $GOPATH $HOME/.cargo"
 	for i in ${COOLDIRS}; do
         	if [ -d $i/sbin ]; then PATH=$i/sbin:$PATH; fi
         	if [ -d $i/bin ]; then PATH=$i/bin:$PATH; fi
@@ -37,7 +38,6 @@ set-environment-vars() {
         	if [ -d $i/share/man ]; then MANPATH=$i/share/man:$MANPATH; fi
         	if [ -d $i/info ]; then INFOPATH=:$i/info:$INFOPATH; fi
 	done
-
 	PATH=$PATH:.
 
 	alias fetch='curl -C - -O $*'
