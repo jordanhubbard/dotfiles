@@ -28,6 +28,11 @@ set-environment-vars() {
 	setenv ELIXIR_EDITOR emacs
 	setenv HISTCONTROL ignoredups:erasedups
 
+	# hailstorm specific hacks.
+	setenv LDFLAGS "-L/usr/local/opt/openssl/lib -L/usr/local/lib"
+	setenv CPPFLAGS "-I/usr/local/opt/openssl/include -I/usr/local/include"
+	setenv PYCURL_SSL_LIBRARY openssl 
+
 	# All path setting magic goes here.
 	[ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
 	COOLDIRS="/opt/local /opt/X11 /usr/local $GOPATH $HOME/.cargo"
