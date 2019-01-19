@@ -1,6 +1,5 @@
 all:
-	@echo "Use the install target to install .bash* and .emacs* files to $HOME"
-	exit 0
+	@echo "Use the install target to install .bash* and .emacs* files to ${HOME}"
 
 install:
 	cp .bashrc .bash_profile $HOME/
