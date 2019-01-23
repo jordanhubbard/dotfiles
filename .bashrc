@@ -163,6 +163,7 @@ repeat()	{
 # Assorted goofy shit.
 
 title() {
+    use-boring-prompt
     echo "]0;$*[31m"
 }
 
