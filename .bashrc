@@ -29,7 +29,7 @@ set-environment-vars() {
 	setenv HISTCONTROL ignoredups:erasedups
 
 	# All path setting magic goes here.
-	[ -z "$GOPATH" ] && export GOPATH="$HOME/Src/gocode"
+	[ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
 	COOLDIRS="/opt/local /opt/X11 /usr/local $GOPATH $HOME/.cargo"
 	for i in ${COOLDIRS}; do
         	if [ -d $i/sbin ]; then PATH=$i/sbin:$PATH; fi
