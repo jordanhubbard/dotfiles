@@ -30,10 +30,12 @@ set-environment-vars() {
 
 	# All path setting magic goes here.
 	[ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
-	COOLDIRS="/opt/local /opt/X11 /usr/local $GOPATH $HOME/.cargo"
+	COOLDIRS="/opt/local /opt/X11 /usr/local/cuda /usr/local $GOPATH $HOME/.cargo"
+	
 	for i in ${COOLDIRS}; do
         	if [ -d $i/sbin ]; then PATH=$i/sbin:$PATH; fi
         	if [ -d $i/bin ]; then PATH=$i/bin:$PATH; fi
+        	if [ -d $i/lib ]; then LD_LIBRARY_PATH=$i/man:$LD_LIBRARY_PATH; fi
         	if [ -d $i/man ]; then MANPATH=$i/man:$MANPATH; fi
         	if [ -d $i/share/man ]; then MANPATH=$i/share/man:$MANPATH; fi
         	if [ -d $i/info ]; then INFOPATH=:$i/info:$INFOPATH; fi
