@@ -151,6 +151,16 @@ findsym() {
     find "$DIR" -type f -a ! -path '*/.git/*' -print0 | xargs -0 grep $grepargs "$1"
 }
 
+open() {
+    if [ $OSTYPE == "linux-gnu" ]; then
+	xdg-open $*
+    elif echo $OSTYPE | grep -q darwin; then
+	/bin/open $*
+    else
+	echo "open not supported on this platform."
+    fi
+}
+
 repeat()	{
 	[ $# -lt 2 ] && echo "Usage: repeat count command ..." && return 1
 	cnt=$1 ;
@@ -161,6 +171,7 @@ repeat()	{
 		i=$((i + 1)) ;
 	done
 }
+
 
 # Assorted goofy shit.
 
