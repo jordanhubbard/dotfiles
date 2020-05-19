@@ -155,7 +155,7 @@ open() {
     if [ $OSTYPE == "linux-gnu" ]; then
 	xdg-open $*
     elif echo $OSTYPE | grep -q darwin; then
-	/bin/open $*
+	/usr/bin/open $*
     else
 	echo "open not supported on this platform."
     fi
