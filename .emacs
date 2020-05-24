@@ -1,13 +1,13 @@
 (require 'package)
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
-                    (not (gnutls-available-p))))
+		    (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https")))
   (when no-ssl (warn "\
 Your version of Emacs does not support SSL connections,
-which is unsafe because it allows man-in-the-middle attacks.
-There are two things you can do about this warning:
-1. Install an Emacs version that does support SSL and be safe.
-2. Remove this warning from your init file so you won't see it again."))
+            which is unsafe because it allows man-in-the-middle attacks.
+        There are two things you can do about this warning:
+        1. Install an Emacs version that does support SSL and be safe.
+        2. Remove this warning from your init file so you won't see it again."))
   (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
   ;; Comment/uncomment this line to enable MELPA Stable if desired.  See `package-archive-priorities`
   ;; and `package-pinned-packages`. Most users will not need or want to do this.
@@ -24,20 +24,20 @@ There are two things you can do about this warning:
 (global-set-key "\C-c\C-k" 'kill-compilation)
 
 ;; I should make this actually use the more "interesting" CC mode hooks to also reformat expressions and such.
-(defun c-frob-buffer ()
+(defun frob-buffer ()
   (interactive)
   (goto-line 1)
   (while (not (eobp))
-    (c-indent-line)
+    (indent-for-tab-command)
     (forward-line 1)))
 
 ;; For plain-old-emacs's C mode
 (setq 
-  c-indent-level                4
-  c-continued-statement-offset  4
-  c-brace-offset               -4
-  c-argdecl-indent              0
-  c-label-offset               -4)
+ c-indent-level                4
+ c-continued-statement-offset  4
+ c-brace-offset               -4
+ c-argdecl-indent              0
+ c-label-offset               -4)
 
 (defun my-c-mode-common-hook ()
   ;; use BSD style for all C, C++, and Objective-C code
@@ -62,4 +62,3 @@ There are two things you can do about this warning:
 
 (add-to-list 'load-path "~/.emacs.d/julia-emacs")
 (require 'julia-mode)
-
