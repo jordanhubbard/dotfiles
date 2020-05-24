@@ -23,12 +23,13 @@ Your version of Emacs does not support SSL connections,
 (global-set-key "\C-c\C-z" 'compile)
 (global-set-key "\C-c\C-k" 'kill-compilation)
 
-;; I should make this actually use the more "interesting" CC mode hooks to also reformat expressions and such.
+;; This is stupid but I like it.
 (defun frob-buffer ()
   (interactive)
+  (setq f (lookup-key (current-global-map) (kbd "TAB")))
   (goto-line 1)
   (while (not (eobp))
-    (indent-for-tab-command)
+    (funcall f)
     (forward-line 1)))
 
 ;; For plain-old-emacs's C mode
