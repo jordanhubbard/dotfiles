@@ -1,0 +1,3 @@
+[submodule ".emacs.d/julia-emacs"]
+	path = .emacs.d/julia-emacs
+	url = https://github.com/JuliaEditorSupport/julia-emacs.git
