@@ -60,3 +60,6 @@ There are two things you can do about this warning:
  ;; If there is more than one, they won't work right.
  )
 
+(add-to-list 'load-path "~/.emacs.d/julia-emacs")
+(require 'julia-mode)
+
