@@ -25,6 +25,7 @@ set-environment-vars() {
 	setenv MANPATH /usr/share/man
 	setenv INFOPATH /usr/share/info
 	setenv ERL_AFLAGS "-kernel shell_history enabled"
+	setenv EDITOR vi
 	setenv ELIXIR_EDITOR emacs
 	setenv HISTCONTROL ignoredups:erasedups
 
