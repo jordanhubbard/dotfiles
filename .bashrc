@@ -130,12 +130,6 @@ portupdate() {
 	sudo port $* reclaim
 }
 
-# Diff two plists                                                               
-diffplist() {
-	[ $# -lt 2 ] && echo "Usage: diffplist plist1 plist2" && return 1
-	diff -u --label "$1" <(plutil -convert xml1 -o - "$1") --label "$2" <(plutil -convert xml1 -o - "$2")
-}
-
 findsym() {
     if echo $1 | grep -q -e - ; then
 	grepargs=$1
@@ -162,7 +156,7 @@ open() {
     fi
 }
 
-repeat()	{
+repeat() {
 	[ $# -lt 2 ] && echo "Usage: repeat count command ..." && return 1
 	cnt=$1 ;
 	shift ;
@@ -173,6 +167,23 @@ repeat()	{
 	done
 }
 
+copyto() {
+	[ $# -lt 1 ] && echo "Usage: copyto [-s] [srcdir] destdir" && return 1
+	if [ "$1" = "-s" ]; then
+		_SUDO=sudo
+		shift
+	else
+		_SUDO=""
+	fi
+	if [ $# -lt 2 ]; then
+		_S=.
+	else
+		_S=$1
+		shift
+	fi
+	_T=$1
+	tar -cpBf - ${_S} | ${_SUDO} tar -xpBvf - -C ${_T}/
+}
 
 # Assorted goofy shit.
 
