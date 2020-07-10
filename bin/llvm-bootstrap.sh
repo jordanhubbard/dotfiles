@@ -13,11 +13,11 @@ fi
 
 cd llvm-project || barf "Can't find llvm-project directory?!"
 
-if [ "$1" = "-p" ]; then
+if [ "$1" = "-j" ]; then
 	shift;
-	_P=$1
+	_J=$1
 else
-	_P=8
+	_J=8
 fi
 
 if [ "$1" = "-r" ]; then
@@ -30,6 +30,6 @@ fi
 cd build
 
 cmake -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;libcxx;libcxxabi;libunwind;lldb;compiler-rt;lld;polly' ../llvm || barf "Cmake step failed"
-make -j${_P} || barf "Unable to build llvm project sources"
+make -j${_J} || barf "Unable to build llvm project sources"
 sudo make install || barf "Installation failed"
 exit 0
