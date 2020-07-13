@@ -2,16 +2,24 @@
 
 barf()
 {
-	echo "$"
+	echo Usage: "$0 [-r] [-j n]"
 	exit 1
 }
 
-if [ ! -d llvm-project ]; then
-	echo "Checking out llvm project"
+LLVM_PROJ=$HOME/Src/llvm-project
+[ ! -d "${LLVM_PROJ}" -a -d llvm-project ] && LLVM_PROJ=llvm-project
+
+if [ "$1" = "-h" ]; then
+	barf
+fi
+
+if [ ! -d "${LLVM_PROJ}" ]; then
+	cd `dirname ${LLVM_PROJ}`
+	echo "Checking out llvm project in `pwd`"
 	git clone https://github.com/llvm/llvm-project.git || barf "Can't clone LLVM project"
 fi
 
-cd llvm-project || barf "Can't find llvm-project directory?!"
+cd ${LLVM_PROJ} || barf "Can't find llvm-project directory?!"
 
 if [ "$1" = "-j" ]; then
 	shift;
