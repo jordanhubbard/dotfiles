@@ -148,9 +148,9 @@ findsym() {
 
 open() {
     if [ $OSTYPE == "linux-gnu" ]; then
-	xdg-open $*
+	xdg-open "$*"
     elif echo $OSTYPE | grep -q darwin; then
-	/usr/bin/open $*
+	/usr/bin/open "$*"
     else
 	echo "open not supported on this platform."
     fi
