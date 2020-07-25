@@ -17,9 +17,11 @@ if [ ! -d "${LLVM_PROJ}" ]; then
 	cd `dirname ${LLVM_PROJ}`
 	echo "Checking out llvm project in `pwd`"
 	git clone https://github.com/llvm/llvm-project.git || barf "Can't clone LLVM project"
+	cd llvm-project || barf "Failed to check out llvm sources"
+else
+	cd `dirname ${LLVM_PROJ}/llvm-project` || barf "Can't find llvm-project directory"
+	git pull
 fi
-
-cd ${LLVM_PROJ} || barf "Can't find llvm-project directory?!"
 
 if [ "$1" = "-j" ]; then
 	shift;
