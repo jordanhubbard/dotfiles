@@ -16,12 +16,7 @@ setenv() {
 }
 
 set-environment-vars() {
-	setenv XKEYSYMDB /usr/X11/lib/X11/XKeysymDB
-	setenv XNLSPATH /usr/X11/lib/X11/nls
-	setenv XAPPLRESDIR /usr/X11/lib/X11/app-defaults
-	setenv BLOCKSIZE 1024
-	setenv RSYNC_RSH ssh
-	setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:$HOME/Bin
+	setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin
 	setenv MANPATH /usr/share/man
 	setenv INFOPATH /usr/share/info
 	setenv ERL_AFLAGS "-kernel shell_history enabled"
