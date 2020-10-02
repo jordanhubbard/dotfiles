@@ -15,6 +15,11 @@ setenv() {
 	_SYM=$1; shift; export $_SYM="$*"
 }
 
+barf() {
+        echo "$0: Error: $*"
+        exit 1
+}
+
 set-environment-vars() {
 	setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin:$HOME/.local/bin
 	setenv MANPATH /usr/share/man
