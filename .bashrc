@@ -20,6 +20,12 @@ barf() {
         exit 1
 }
 
+dockercleanthefuckup() {
+	docker image prune
+	docker volume prune
+	docker container prune
+}
+
 set-environment-vars() {
 	setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin:$HOME/.local/bin
 	setenv MANPATH /usr/share/man
