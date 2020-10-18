@@ -45,7 +45,6 @@ set-environment-vars() {
 	done
 	PATH=$PATH:.
 
-	[ -x /opt/local/bin/docker-machine ] && eval $(/opt/local/bin/docker-machine env)
 	alias fetch='curl -C - -O $*'
 	alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Resources/jsc'
 
