@@ -15,10 +15,6 @@ setenv() {
 	_SYM=$1; shift; export $_SYM="$*"
 }
 
-barf() {
-        echo "$0: Error: $*"
-        exit 1
-}
 
 dockercleanthefuckup() {
 	docker image prune
