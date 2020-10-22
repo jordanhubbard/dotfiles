@@ -17,5 +17,5 @@ if [ "$1" = "-d" ]; then
 
 	docker run --gpus all $USER -v /home/jkh/Src/Notebooks:/workspace/Notebooks -it -p 8888:8888 --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 jkh-tf2
 else
-	jupyter --no-browser --ip=0.0.0.0
+	jupyter notebook --no-browser --ip=0.0.0.0
 fi
