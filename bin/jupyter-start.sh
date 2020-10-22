@@ -1,6 +1,11 @@
 #!/bin/sh
 
-if [ $1 = "-d" ]; then
+if [ "$1" = "-h" ]; then
+	echo "$0: [-d] to run containerized or bare metal"
+	exit 1
+fi
+
+if [ "$1" = "-d" ]; then
 	shift
 	if [ "$1" = "-r" ]; then
 		USER=""
