@@ -5,6 +5,9 @@ if [ "$1" = "-h" ]; then
 	exit 1
 fi
 
+# Increase the JIT cache size for Ampere
+export CUDA_CACHE_MAXSIZE=2147483648
+
 if [ "$1" = "-d" ]; then
 	shift
 	if [ "$1" = "-r" ]; then
