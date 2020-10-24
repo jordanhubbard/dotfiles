@@ -106,6 +106,11 @@ psg()	{
 	ps ax|grep $*
 }
 
+s() {
+	[ $# -lt 1 ] && echo "Usage: s hostname" && return
+	ssh jkh@$1.local
+}
+
 aptupdate() {
 	sudo apt update && sudo apt upgrade
 	sudo depmod
