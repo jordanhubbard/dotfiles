@@ -23,7 +23,7 @@ dockercleanthefuckup() {
 }
 
 set-environment-vars() {
-	setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin:$HOME/.local/bin
+	setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin
 	setenv MANPATH /usr/share/man
 	setenv INFOPATH /usr/share/info
 	setenv ERL_AFLAGS "-kernel shell_history enabled"
@@ -33,7 +33,7 @@ set-environment-vars() {
 
 	# All path setting magic goes here.
 	[ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
-	COOLDIRS="/opt/local /snap /opt/X11 /usr/local/cuda /usr/local $GOPATH $HOME/.cargo"
+	COOLDIRS="$HOME/.local $HOME/anaconda3 /opt/local /snap /opt/X11 /usr/local/cuda /usr/local $GOPATH $HOME/.cargo"
 	
 	for i in ${COOLDIRS}; do
         	if [ -d $i/sbin ]; then PATH=$PATH:$i/sbin; fi
