@@ -111,6 +111,10 @@ s() {
 	ssh jkh@$1.local
 }
 
+pipit() {
+	pip install  -U --user --use-feature=2020-resolver $*
+}
+
 aptupdate() {
 	sudo apt update && sudo apt upgrade
 	sudo depmod
