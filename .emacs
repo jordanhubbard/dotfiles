@@ -16,7 +16,6 @@ Your version of Emacs does not support SSL connections,
 (package-initialize)
 
 (font-lock-mode t)
-(desktop-save-mode 1)
 
 (global-set-key "\M-g" 'goto-line)
 (global-set-key "\C-c\C-w" 'write-region)
