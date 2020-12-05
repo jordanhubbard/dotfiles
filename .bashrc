@@ -108,7 +108,13 @@ psg()	{
 
 s() {
 	[ $# -lt 1 ] && echo "Usage: s hostname" && return
-	ssh jkh@$1.local
+	if [ $1 = "-r" ]; then
+		_USER="root"
+		shift
+        else
+		_USER="jkh"
+	fi
+	ssh $_USER@$1.local
 }
 
 pipit() {
