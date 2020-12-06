@@ -109,7 +109,7 @@ psg()	{
 s() {
 	[ $# -lt 1 ] && echo "Usage: s hostname [-r] [-ssh-args]" && return
 	_HOST=$1; shift
-	if [ $1 = "-r" ]; then
+	if [ "$1" = "-r" ]; then
 		_USER="root"
 		shift
         else
