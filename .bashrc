@@ -115,7 +115,7 @@ s() {
         else
 		_USER="jkh"
 	fi
-	ssh $* ${_USER}@${_HOST}.local
+	ssh ${_USER}@${_HOST}.local $*
 }
 
 pipit() {
