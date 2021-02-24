@@ -32,7 +32,7 @@ while getopts "j:hr" opt; do
 	esac
 done
 
-if [ $_RESUME ]; then
+if [ $_RESUME -eq 1 ]; then
 	echo "Resuming: Not cleaning first."
 else
 	rm -rf build
