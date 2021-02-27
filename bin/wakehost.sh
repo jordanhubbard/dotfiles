@@ -6,7 +6,7 @@ if [ $# -lt 1 ]; then
 fi
 host=$1
 
-tuples="megamind a8:a1:59:17:7a:54 fluffy f8:ff:c2:46:45:29"
+tuples="megamind a8:a1:59:17:7a:54 fluffy f8:ff:c2:46:45:29 nvwaffle 3c:22:fb:e5:21:03"
 
 _found=0
 _mac=""
