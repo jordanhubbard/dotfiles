@@ -11,7 +11,6 @@ tuples="megamind a8:a1:59:17:7a:54 fluffy f8:ff:c2:46:45:29 nvwaffle 3c:22:fb:e5
 _found=0
 _mac=""
 for x in $tuples; do
-echo $x
 	if [ "$host" == "$x" ]; then
 		_found=1
 		continue
