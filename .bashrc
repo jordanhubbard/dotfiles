@@ -128,6 +128,15 @@ pipit() {
     pip install  -U --user --use-feature=2020-resolver $*
 }
 
+aptgrep ()
+{
+	if [ $# -gt 0 ]; then
+		dpkg --get-selections | awk '{print $1}' | egrep $*;
+	else
+		dpkg --get-selections | awk '{print $1}';
+	fi
+}
+
 aptupdate() {
     sudo apt update && sudo apt upgrade
     sudo depmod
