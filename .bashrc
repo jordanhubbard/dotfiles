@@ -227,30 +227,12 @@ use-boring-prompt() {
     PS1="\u@\h-> "
 }
 
-sync-dotfiles() {
-    [ $# -lt 1 ] && echo "Usage: sync-dotfiles hostname" && return 1
-    _TGTS="";
-    for i in .bashrc .bash_profile .emacs .fvwmrc .mh_profile .signature .xinitrc .xsession .xsession-real .xmodmap .Xdefaults; do
-	if [ -f $HOME/$i ]; then
-	    _TGTS="${_TGTS} $HOME/$i";
-	fi
-    done
-    scp -p ${_TGTS} $1:
-}
-
 cc-rabid() {
     cc 	-W -Wall -ansi -pedantic -Wbad-function-cast -Wcast-align \
 	-Wcast-qual -Wchar-subscripts -Wconversion -Winline \
 	-Wmissing-prototypes -Wnested-externs -Wpointer-arith \
 	-Wredundant-decls -Wshadow -Wstrict-prototypes \
 	-Wwrite-strings $*
-}
-
-md5verify() {
-    if [ $# -lt 1 ]; then echo "Usage: md5verify md5-file."; return 1; fi
-    if [ ! -f $1 ]; then echo "Error: $1 is not a file."; return 1; fi
-    
-    cat $1 | sed -e 's/(/ /' -e 's/)/ /' | awk '{print "if [ " "\"" "`md5 "$2 "`\" != " "\"" $1 " (" $2 ") " $3 " " $4 "\"" " ]; then echo \"" $2 " mismatch\"; fi" }' | sh
 }
 
 # emit a datestamp
