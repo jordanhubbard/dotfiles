@@ -38,7 +38,7 @@ set-environment-vars() {
     for i in ${COOLDIRS}; do
         [ -d $i/sbin ] && PATH=$PATH:$i/sbin
         [ -d $i/bin ] && PATH=$PATH:$i/bin
-        [ -d $i/lib ] && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$i/man
+        [ -d $i/lib ] && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$i/lib
         [ -d $i/man ] && MANPATH=$MANPATH:$i/man
         [ -d $i/share/man ] && MANPATH=$MANPATH:$i/share/man
         [ -d $i/info ] && INFOPATH=$INFOPATH:$i/info
