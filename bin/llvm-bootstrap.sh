@@ -9,10 +9,6 @@ barf()
 LLVM_PROJ=$HOME/Src/llvm-project
 [ ! -d "${LLVM_PROJ}" -a -d llvm-project ] && LLVM_PROJ=llvm-project
 
-if [ "$1" = "-h" ]; then
-	barf
-fi
-
 if [ ! -d "${LLVM_PROJ}" ]; then
 	cd `dirname ${LLVM_PROJ}`
 	echo "Checking out llvm project in `pwd`"
@@ -23,16 +19,21 @@ else
 	git pull
 fi
 
-if [ "$1" = "-j" ]; then
-	shift;
-	_J=$1
-else
-	_J=8
-fi
+_J=8
+_RESUME=0
+while getopts "j:hr" opt; do
+	case $opt in
+	h)
+		barf;;
+	j)
+		_J=$OPTARG;;
+	r)
+		_RESUME=1;;
+	esac
+done
 
-if [ "$1" = "-r" ]; then
+if [ $_RESUME -eq 1 ]; then
 	echo "Resuming: Not cleaning first."
-	shift
 else
 	rm -rf build
 	mkdir build
@@ -42,4 +43,3 @@ cd build
 cmake -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;libcxx;libcxxabi;libunwind;lldb;compiler-rt;lld;polly' ../llvm || barf "Cmake step failed"
 make -j${_J} || barf "Unable to build llvm project sources"
 sudo make install || barf "Installation failed"
-exit 0
