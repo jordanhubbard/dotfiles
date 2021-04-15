@@ -146,6 +146,12 @@ aptupdate() {
 	sudo depmod
 }
 
+aptfixup() {
+	sudo apt-get update --fix-missing
+	sudo apt-get install -f
+	sudo apt autoremove
+}
+
 remote-tmux() {
     _host=$1; shift
     ssh ${_host} tmux new-session -d sh "$*"
