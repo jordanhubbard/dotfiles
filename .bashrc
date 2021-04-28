@@ -125,7 +125,7 @@ s() {
     else
 	_USER="jkh"
     fi
-    ${SSH_CMD-ssh} ${_USER}@${_HOST}.local $*
+    ${SSH_CMD-ssh} $* ${_USER}@${_HOST}.local
 }
 
 pipit() {
