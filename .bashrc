@@ -173,6 +173,11 @@ portupdate() {
     sudo port $* reclaim
 }
 
+# Shortcut for git clone that adds the flags I always forget about.
+gitcl() {
+	git clone --recurse-submodules $*
+}
+
 findsym() {
     if echo $1 | grep -q -e - ; then
 	grepargs=$1
