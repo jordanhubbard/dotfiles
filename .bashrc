@@ -144,6 +144,7 @@ aptgrep ()
 aptupdate() {
 	sudo apt update && sudo apt upgrade $*
 	sudo depmod
+	sudo apt autoremove
 }
 
 aptfixup() {
