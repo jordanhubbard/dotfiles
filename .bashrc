@@ -112,6 +112,11 @@ psg()	{
     ps ax|grep $*
 }
 
+vc() {
+    [ $# -lt 1 ] && echo "Usage: s hostname" && return
+    open vnc://$1.local
+}
+
 sm() {
     SSH_CMD=mosh s $*
 }
