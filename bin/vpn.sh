@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # Customize to taste.  In my case, I like SantaClara2 and I am jordanh
-DEF_VPN=SantaClara2
-DEF_USER=jordanh
+DEF_VPN="SantaClara2"
+DEF_USER="jordanh"
 
 VPN_LIST="
 London ngvpn10.vpn.nvidia.com
