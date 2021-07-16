@@ -1,7 +1,8 @@
 #!/bin/sh
 
-# Localize to taste.  In my case, I like SantaClara2
+# Customize to taste.  In my case, I like SantaClara2 and I am jordanh
 DEF_VPN=SantaClara2
+DEF_USER=jordanh
 
 VPN_LIST="
 London ngvpn10.vpn.nvidia.com
@@ -70,9 +71,9 @@ vpn_server_for_name()
 if [ $# -eq 0 ]; then
     _VPN=`vpn_server_for_name ${DEF_VPN}`
 else
-    while getopts hls: flag; do
+    while getopts hls:u: flag; do
 	case "${flag}" in
-	    h) echo "Usage: $0 [-h|-l|-s vpn-location]"
+	    h) echo "Usage: $0 [-h|-l|-s vpn-location|-u username]"
 	       echo "Use -l to list all known vpn-locations"
 	       echo "Use -s to select a specific vpn-location"
 	       echo "Default behavior is to use ${DEF_VPN} location"
@@ -93,9 +94,17 @@ else
 		    exit 1
 		fi
 		;;
+	    
+	    u)
+		_USER=${OPTARG}
+		;;
 	esac
     done
 fi
 
+[ -z "${_USER}" ] && _USER=${DEF_USER}
+
+_VPN_ARGS="--authgroup=Employee --user=${_USER} --servercert pin-sha256:9ax0WUN0h+NDlESAxoKF3K5rbby/RrYPTBtiz7ejgAU="
+
 echo "Connecting to VPN server ${_VPN} - you will need to supply your password"
-sudo openconnect ${_VPN}
+sudo openconnect ${_VPN} ${_VPN_ARGS}
