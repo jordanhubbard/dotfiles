@@ -104,7 +104,7 @@ fi
 
 [ -z "${_USER}" ] && _USER=${DEF_USER}
 
-_VPN_ARGS="--authgroup=Employee --user=${_USER} --servercert pin-sha256:9ax0WUN0h+NDlESAxoKF3K5rbby/RrYPTBtiz7ejgAU="
+_VPN_ARGS="--authgroup=Employee --user=${_USER}"
 
 echo "Connecting to VPN server ${_VPN} - you will need to supply your password"
 sudo openconnect ${_VPN} ${_VPN_ARGS}
