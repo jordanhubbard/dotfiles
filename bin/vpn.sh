@@ -56,7 +56,7 @@ vpn_server_for_name()
     _found=0
     _hostname=""
     for server in ${VPN_LIST}; do
-	if [ "$1" == "${server}" ]; then
+	if [ "$1" = "${server}" ]; then
 	    _found=1
 	    continue
 	fi
