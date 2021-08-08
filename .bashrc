@@ -15,11 +15,18 @@ setenv() {
     _SYM=$1; shift; export $_SYM="$*"
 }
 
-
-dockercleanthefuckup() {
+dockercleanup() {
     docker image prune
     docker volume prune
     docker container prune
+}
+
+makeworld() {
+	if [ "`uname -n`" != "freebsd" ]; then
+		echo "Only applicable to FreeBSD"
+		return
+	fi
+	cd /usr/src && sudo make world kernel DESTDIR=/ 2>&1 | tee make.out
 }
 
 set-environment-vars() {
