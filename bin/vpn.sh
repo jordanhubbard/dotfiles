@@ -68,16 +68,21 @@ vpn_server_for_name()
     echo ${_hostname}
 }
 
+usage()
+{
+    echo "Usage: $0 [-h|-l|-s vpn-location|-u username]"
+    echo "Use -l to list all known vpn-locations"
+    echo "Use -s to select a specific vpn-location"
+    echo "Default behavior is to use ${DEF_VPN} location"
+    exit 0
+}
+
 if [ $# -eq 0 ]; then
     _VPN=`vpn_server_for_name ${DEF_VPN}`
 else
     while getopts hls:u: flag; do
 	case "${flag}" in
-	    h) echo "Usage: $0 [-h|-l|-s vpn-location|-u username]"
-	       echo "Use -l to list all known vpn-locations"
-	       echo "Use -s to select a specific vpn-location"
-	       echo "Default behavior is to use ${DEF_VPN} location"
-	       exit 0
+	    h) usage
 	       ;;
 	    
 	    l) echo "Default VPN server: ${DEF_VPN}"
@@ -97,6 +102,10 @@ else
 	    
 	    u)
 		_USER=${OPTARG}
+		;;
+
+	    *)
+		usage
 		;;
 	esac
     done
