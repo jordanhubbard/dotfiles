@@ -35,7 +35,7 @@ done
 
 if [ ! -d "${_LLVM_PROJ}" ]; then
 	cd `dirname ${_LLVM_PROJ}`
-	echo "Checking out llvm project in `pwd`"
+	echo "Checking out llvm project in `pwd` ${_BRANCH}"
 	git clone ${_BRANCH} https://github.com/llvm/llvm-project.git || usage "Can't clone LLVM project"
 	cd llvm-project || usage "Failed to check out llvm sources"
 else
