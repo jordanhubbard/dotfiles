@@ -37,7 +37,7 @@ linuxkernel() {
 		return
 	fi
 	_JOBS=8
-	if [ $1 = "-j" && $# -gt 1 ]; then
+	if [ "$1" = "-j" && $# -gt 1 ]; then
 	     _JOBS=$2
 	fi
 	cd $HOME/Src/linux && git pull && make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
