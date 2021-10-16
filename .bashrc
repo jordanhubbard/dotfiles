@@ -21,12 +21,22 @@ dockercleanup() {
     docker container prune
 }
 
+# Build the entire world for FreeBSD
 makeworld() {
-	if [ "`uname -n`" != "freebsd" ]; then
+	if [ "`uname -o`" != "FreeBSD" ]; then
 		echo "Only applicable to FreeBSD"
 		return
 	fi
 	cd /usr/src && sudo make world kernel DESTDIR=/ 2>&1 | tee make.out
+}
+
+# Build and install just the Linux kernel + modules
+linuxkernel() {
+	if [ "`uname -o`" != "GNU/Linux" ]; then
+		echo "Only applicable to Linux"
+		return
+	fi
+	cd $HOME/Src/linux && git pull && make -j8 && sudo make modules_install && sudo make install
 }
 
 set-environment-vars() {
