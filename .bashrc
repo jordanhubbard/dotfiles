@@ -36,7 +36,11 @@ linuxkernel() {
 		echo "Only applicable to Linux"
 		return
 	fi
-	cd $HOME/Src/linux && git pull && make -j8 && sudo make modules_install && sudo make install
+	_JOBS=8
+	if [ $1 = "-j" && $# -gt 1 ]; then
+	     _JOBS=$2
+	fi
+	cd $HOME/Src/linux && git pull && make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
 }
 
 set-environment-vars() {
@@ -96,18 +100,18 @@ enable-xrdp() {
 # Docker / Kubernetes things
 
 kubeit() {
-    if [ $1 == "--remote" ]; then
+    if [ $1 = "--remote" ]; then
 	_KUBECONFIG="--kubeconfig $HOME/.kube/k8s-prod-hq.config"
 	shift
-    elif [ $1 == "--local" ]; then
+    elif [ $1 = "--local" ]; then
 	_KUBECONFIG=""
 	shift
     fi
-    if [ $1 == "ubuntu" ]; then
+    if [ $1 = "ubuntu" ]; then
 	_CMD="run my-shell --attach=true  -i --tty --image ubuntu -- bash"
-    elif [ $1 == "token" ]; then
+    elif [ $1 = "token" ]; then
 	_CMD="describe secret -n kube-system kubernetes-dashboard"
-    elif [ $1 == "dashboard" ]; then
+    elif [ $1 = "dashboard" ]; then
 	_CMD="proxy"
 	echo "Open http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/#!/node?namespace=default after proxy starts"
     else
@@ -218,7 +222,7 @@ findsym() {
 }
 
 open() {
-    if [ "$OSTYPE" == "linux-gnu" ]; then
+    if [ "$OSTYPE" = "linux-gnu" ]; then
 	xdg-open "$*"
     elif echo $OSTYPE | grep -q darwin; then
 	/usr/bin/open "$*"
@@ -285,5 +289,5 @@ find-receipt() {
 }
 
 shopt -s histappend
-[ "${TERM}" == "dumb" ] || use-fancy-prompt    
+[ "${TERM}" = "dumb" ] || use-fancy-prompt    
 set-environment-vars
