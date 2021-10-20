@@ -1,15 +1,4 @@
 #!/bin/bash
-#
-# Version: 1.5.3
-# This version is the goodest one.
-# Changelog:
-# 2018/08/14: Made portupdate also accept optional flags (like -v)
-# 2018/08/19: Reversed order of PATHs to put optional components ahead of system
-# 2018/08/19: Made mkcd properly mkdir -p
-# 2018/08/20: Change default .history variables.
-# 2018/09/20: Make port selfupdate unconditional to account for rsync'd sources
-# 2018/09/20: Add cargo to path, fix MANPATH settings.
-# 2018/10/20: Moved to github - See github changelog for information past here
 
 setenv() {
     _SYM=$1; shift; export $_SYM="$*"
