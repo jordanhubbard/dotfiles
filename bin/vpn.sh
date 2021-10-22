@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Customize to taste.  In my case, I like SantaClara2 and I am jordanh
-DEF_VPN="SantaClara2"
+DEF_VPN="SantaClara3"
 DEF_USER="jordanh"
 
 VPN_LIST="
@@ -27,6 +27,7 @@ Seoul ngvpn36.vpn.nvidia.com
 Tokyo ngvpn37.vpn.nvidia.com
 SantaClara1 ngvpn01.vpn.nvidia.com
 SantaClara2 ngvpn02.vpn.nvidia.com
+SantaClara3 ngvpn50.vpn.nvidia.com
 Austin ngvpn03.vpn.nvidia.com
 Durham ngvpn04.vpn.nvidia.com
 Westford ngvpn05.vpn.nvidia.com
@@ -113,7 +114,7 @@ fi
 
 [ -z "${_USER}" ] && _USER=${DEF_USER}
 
-_VPN_ARGS="--authgroup=Employee --user=${_USER}"
+_VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 mail wiki confluence nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view prod.vault.nvidia.com ngc' --authgroup=Employee -u ${_USER}"
 
 echo "Connecting to VPN server ${_VPN} - you will need to supply your password"
-sudo openconnect ${_VPN} ${_VPN_ARGS}
+eval sudo openconnect ${_VPN} ${_VPN_ARGS}
