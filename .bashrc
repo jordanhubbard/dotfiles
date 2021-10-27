@@ -10,6 +10,11 @@ dockercleanup() {
     docker container prune
 }
 
+# Re-sync dotfiles from git.
+dotsync() {
+    cd $HOME/Src/dotfiles && git pull && make install
+}
+
 # Build the entire world for FreeBSD
 makeworld() {
 	if [ "`uname -o`" != "FreeBSD" ]; then
