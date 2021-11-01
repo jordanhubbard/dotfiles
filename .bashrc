@@ -15,9 +15,14 @@ dotsync() {
     cd $HOME/Src/dotfiles && git pull && make install
 }
 
+# Tell me if the OS is $1
+isOSNamed() {
+    [ "`uname -s`" = "$1" ]
+}
+
 # Build the entire world for FreeBSD
 makeworld() {
-	if [ "`uname -o`" != "FreeBSD" ]; then
+	if ! isOSNamed FreeBSD; then
 		echo "Only applicable to FreeBSD"
 		return
 	fi
@@ -26,7 +31,7 @@ makeworld() {
 
 # Build and install just the Linux kernel + modules
 linuxkernel() {
-	if [ "`uname -o`" != "GNU/Linux" ]; then
+	if ! isOSNamed Linux; then
 		echo "Only applicable to Linux"
 		return
 	fi
