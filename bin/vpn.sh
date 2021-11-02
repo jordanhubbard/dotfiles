@@ -3,6 +3,7 @@
 # Customize to taste.  In my case, I like SantaClara2 and I am jordanh
 DEF_VPN="SantaClara3"
 DEF_USER="jordanh"
+VPN_SLICE=1
 
 VPN_LIST="
 London ngvpn10.vpn.nvidia.com
@@ -71,9 +72,11 @@ vpn_server_for_name()
 
 usage()
 {
-    echo "Usage: $0 [-h|-l|-s vpn-location|-u username]"
-    echo "Use -l to list all known vpn-locations"
-    echo "Use -s to select a specific vpn-location"
+    echo "Usage: $0 [-h|-l|-n|-s vpn-location|-u username]"
+    echo "-h for this help text"
+    echo "-l to list all known vpn-locations"
+    echo "-n do not enable VPN domain slicing"
+    echo "-s to select a specific vpn-location"
     echo "Default behavior is to use ${DEF_VPN} location"
     exit 0
 }
@@ -81,7 +84,7 @@ usage()
 if [ $# -eq 0 ]; then
     _VPN=`vpn_server_for_name ${DEF_VPN}`
 else
-    while getopts hls:u: flag; do
+    while getopts hlns:u: flag; do
 	case "${flag}" in
 	    h) usage
 	       ;;
@@ -93,6 +96,10 @@ else
 	       exit 0
 	       ;;
 	    
+	    n)
+	       VPN_SLICE=0
+	       ;;
+
 	    s)
 		_VPN=`vpn_server_for_name ${OPTARG}`
 		if [ -z "${_VPN}" ]; then
@@ -114,7 +121,11 @@ fi
 
 [ -z "${_USER}" ] && _USER=${DEF_USER}
 
-_VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn.nvidia.com apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view prod.vault.nvidia.com ngc' --authgroup=Employee -u ${_USER}"
+if [ ${VPN_SLICE} -eq 0 ]; then
+   _VPN_ARGS="--authgroup=Employee -u ${_USER}"
+else
+   _VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn.nvidia.com apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view prod.vault.nvidia.com ngc' --authgroup=Employee -u ${_USER}"
+fi
 
 echo "Connecting to VPN server ${_VPN} - you will need to supply your password"
 eval sudo openconnect ${_VPN} ${_VPN_ARGS}
