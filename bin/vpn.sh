@@ -124,7 +124,7 @@ fi
 if [ ${VPN_SLICE} -eq 0 ]; then
    _VPN_ARGS="--authgroup=Employee -u ${_USER}"
 else
-   _VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn.nvidia.com apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view vault.nvidia.com ngc' --authgroup=Employee -u ${_USER}"
+   _VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn.nvidia.com apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view stg.vault.nvidia.com prod.vault.nvidia.com ngc' --authgroup=Employee -u ${_USER}"
 fi
 
 echo "Connecting to VPN server ${_VPN} - you will need to supply your password"
