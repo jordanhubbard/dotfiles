@@ -39,7 +39,12 @@ linuxkernel() {
 	if [ "$1" = "-j" ]; then
 	     _JOBS=$2
 	fi
-	cd $HOME/Src/linux && git pull && make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
+	if which clang > /dev/null 2>&1; then
+
+		cd $HOME/Src/linux && git pull && env CC=clang LLVM=1 make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
+	else
+		cd $HOME/Src/linux && git pull && make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
+	fi
 }
 
 set-environment-vars() {
