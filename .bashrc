@@ -30,7 +30,7 @@ makeworld() {
 }
 
 # Build and install just the Linux kernel + modules
-linuxkernel() {
+makelinux() {
 	if ! isOSNamed Linux; then
 		echo "Only applicable to Linux"
 		return
@@ -40,8 +40,7 @@ linuxkernel() {
 	     _JOBS=$2
 	fi
 	if which clang > /dev/null 2>&1; then
-
-		cd $HOME/Src/linux && git pull && env CC=clang LLVM=1 make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
+		cd $HOME/Src/linux && git pull && env CC=clang LLVM=1 make -j${_JOBS} && sudo env CC=clang LLVM=1 make -j${_JOBS} modules_install && sudo env CC=clang LLVM=1 make -j${_JOBS} install
 	else
 		cd $HOME/Src/linux && git pull && make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
 	fi
