@@ -39,7 +39,8 @@ makelinux() {
 	if [ "$1" = "-j" ]; then
 	     _JOBS=$2
 	fi
-	if which clang > /dev/null 2>&1; then
+	# clang kernel build temporarily disabled due to interop problems.
+	if which clangXXX > /dev/null 2>&1; then
 		cd $HOME/Src/linux && git pull && env CC=clang LLVM=1 make -j${_JOBS} && sudo env CC=clang LLVM=1 make -j${_JOBS} modules_install && sudo env CC=clang LLVM=1 make -j${_JOBS} install
 	else
 		cd $HOME/Src/linux && git pull && make -j${_JOBS} && sudo make -j${_JOBS} modules_install && sudo make -j${_JOBS} install
