@@ -125,8 +125,8 @@ done
 if [ "${VPN_SLICE}" = "n" ]; then
    VPN_ARGS="--authgroup=Employee -u ${_USER}"
 else
-   VPN_ARGS="-s \'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 ${VPN_SLICE_HOSTS}\' --authgroup=Employee -u ${_USER}"
+   VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 ${VPN_SLICE_HOSTS}' --authgroup=Employee -u ${_USER}"
 fi
 
-echo "Connecting to VPN server ${VPN_HOST} - you will need to supply your password"
-eval sudo openconnect ${VPN_HOST} ${VPN_ARGS}
+echo "Please be prepared to enter sudo and VPN passwords"
+eval sudo -p "SUDO password: " openconnect ${VPN_HOST} ${VPN_ARGS}
