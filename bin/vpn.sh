@@ -1,9 +1,13 @@
 #!/bin/sh
 
-# Customize to taste.  In my case, I like SantaClara2 and I am jordanh
+# Customize to taste.  In my case, I like SantaClara3 and I am jordanh
 DEF_VPN="SantaClara3"
 DEF_USER="jordanh"
+
+# Set to y to do split routing for VPN (don't route all traffic over VPN, just
+# the hosts listed in VPN_SLICE_HOSTS).
 VPN_SLICE="y"
+VPN_SLICE_HOSTS="mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn.nvidia.com apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view stg.vault prod.vault ngc sapssovm1"
 
 VPN_LIST="
 London ngvpn10.vpn.nvidia.com
@@ -121,7 +125,7 @@ done
 if [ "${VPN_SLICE}" = "n" ]; then
    VPN_ARGS="--authgroup=Employee -u ${_USER}"
 else
-   VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn.nvidia.com apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view stg.vault.nvidia.com prod.vault.nvidia.com ngc' --authgroup=Employee -u ${_USER}"
+   VPN_ARGS="-s \'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 ${VPN_SLICE_HOSTS}\' --authgroup=Employee -u ${_USER}"
 fi
 
 echo "Connecting to VPN server ${VPN_HOST} - you will need to supply your password"
