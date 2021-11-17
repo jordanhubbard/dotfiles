@@ -129,4 +129,4 @@ else
 fi
 
 echo "Please be prepared to enter sudo and VPN passwords"
-eval sudo -p "SUDO password: " openconnect ${VPN_HOST} ${VPN_ARGS}
+eval sudo -p \"SUDO password: \" openconnect ${VPN_HOST} ${VPN_ARGS}
