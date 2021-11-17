@@ -7,7 +7,7 @@ DEF_USER="jordanh"
 # Set to y to do split routing for VPN (don't route all traffic over VPN, just
 # the hosts listed in VPN_SLICE_HOSTS).
 VPN_SLICE="y"
-VPN_SLICE_HOSTS="mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn.nvidia.com apps.nvinfo.nvidia.com pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view stg.vault prod.vault ngc sapssovm1"
+VPN_SLICE_HOSTS="mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn apps.nvinfo pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view stg.vault prod.vault ngc sapssovm1"
 
 VPN_LIST="
 London ngvpn10.vpn.nvidia.com
@@ -125,7 +125,11 @@ done
 if [ "${VPN_SLICE}" = "n" ]; then
    VPN_ARGS="--authgroup=Employee -u ${_USER}"
 else
-   VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 ${VPN_SLICE_HOSTS}' --authgroup=Employee -u ${_USER}"
+   _VPN_SLICE_LIST=""
+   for i in ${VPN_SLICE_HOSTS}; do
+	_VPN_SLICE_LIST="${i}.nvidia.com ${_VPN_SLICE_LIST}"
+   done
+   VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 ${_VPN_SLICE_LIST}' --authgroup=Employee -u ${_USER}"
 fi
 
 echo "Please be prepared to enter sudo and VPN passwords"
