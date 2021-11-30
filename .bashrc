@@ -73,10 +73,12 @@ set-environment-vars() {
     setenv ERL_AFLAGS "-kernel shell_history enabled"
     setenv EDITOR vi
     setenv ELIXIR_EDITOR emacs
+    setenv _NVMINIT /opt/local/share/nvm/init-nvm.sh
     setenv HISTCONTROL ignoredups:erasedups
     
     # All path setting magic goes here.
     [ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
+    [ -f "${_NVMINIT}" ] && source ${_NVMINIT}
     COOLDIRS="$HOME/.local $HOME/anaconda3 /opt/local /snap /opt/X11 /usr/local/cuda /usr/local $GOPATH $HOME/.cargo"
     
     for i in ${COOLDIRS}; do
