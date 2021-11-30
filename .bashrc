@@ -50,7 +50,7 @@ makelinux() {
 # Entirely custom function for saving 3D models
 save-model() {
 	_DOWN=$HOME/Downloads
-	_MODELS=$HOME/Documents/3DPrinting
+	_MODELS=$HOME/Documents/STL-Models
 	pushd ${_DOWN}
 	_NAME=`basename $1 .zip`
 	if [ "${_NAME}" = "$1" ]; then
