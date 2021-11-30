@@ -47,6 +47,25 @@ makelinux() {
 	fi
 }
 
+# Entirely custom function for saving 3D models
+save-model() {
+	_DOWN=$HOME/Downloads
+	_MODELS=$HOME/Documents/3DPrinting
+	pushd ${_DOWN}
+	_NAME=`basename $1 .zip`
+	if [ "${_NAME}" = "$1" ]; then
+		echo "$0: Must specify a .zip file from the ${_DOWN} directory"		return
+	fi
+
+	if [ ! -d "${_MODELS}" ]; then
+		echo "$0: No ${_MODELS} directory."
+		return
+	fi
+	cd ${_MODELS}
+	mkdir -p ${_NAME} && cd ${_NAME} && unzip ${_DOWN}/${_NAME}.zip && rm ${_DOWN}/${_NAME}.zip
+	popd
+}
+
 set-environment-vars() {
     setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin
     setenv MANPATH /usr/share/man
