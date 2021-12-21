@@ -132,7 +132,7 @@ else
    VPN_ARGS="-s 'vpn-slice --verbose --dump -I -i --domains-vpn-dns=nvidia.com,nvmetal.net %10.11.0.0/16 10.0.0.0/8 72.25.64.0/18 216.228.112.0/20 209.66.87.0/24 24.51.0.0/19 64.125.39.0/24 ${_VPN_SLICE_LIST}' --authgroup=Employee -u ${_USER}"
 fi
 
-if find /etc/resolver -empty > /dev/null; then
+if test -d /etc/resolver && find /etc/resolver -empty > /dev/null; then
    echo "Warning:  /etc/resolver directory is NOT empty.  VPN may fail to work"
 fi
 
