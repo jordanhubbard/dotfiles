@@ -137,4 +137,4 @@ if test -d /etc/resolver && find /etc/resolver -empty > /dev/null; then
 fi
 
 echo "Please be prepared to enter sudo and VPN passwords"
-eval sudo -p \"SUDO password: \" openconnect ${VPN_HOST} ${VPN_ARGS}
+eval sudo -p \"SUDO password: \" openconnect "${VPN_HOST}" "${VPN_ARGS}"
