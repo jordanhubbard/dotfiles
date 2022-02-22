@@ -7,7 +7,7 @@ DEF_USER="jordanh"
 # Set to y to do split routing for VPN (don't route all traffic over VPN, just
 # the hosts listed in VPN_SLICE_HOSTS).
 VPN_SLICE="y"
-VPN_SLICE_HOSTS="mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn apps.nvinfo pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view stg.vault prod.vault ngc stg.ngc sapssovm1 sc-itss"
+VPN_SLICE_HOSTS="mail wiki confluence gpuwa nvinfo nvbugs nvbugswb prestige hqnvwa11 hqnvwa12 ssogate nvsso ssoauth teams dlrequest p4protects coupa vpn apps.nvinfo pid pdp services gitlab-master sapdctabl1 sape7psys sape7pscs docusign prom nv nvsearch psgview p4viewer view stg.vault prod.vault ngc catalog.ngc sapssovm1 sc-itss"
 
 VPN_LIST="
 London ngvpn10.vpn.nvidia.com
