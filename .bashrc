@@ -316,5 +316,6 @@ find-receipt() {
 shopt -s histappend
 [ "${TERM}" = "dumb" ] || use-fancy-prompt    
 [ -f "${HOME}/.cargo/env" ] && . ${HOME}/.cargo/env
+[ -f "${HOME}/.asdf/asdf.sh" ] && . ${HOME}/.asdf/asdf.sh
 
 set-environment-vars
