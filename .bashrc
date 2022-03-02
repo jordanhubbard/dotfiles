@@ -101,6 +101,12 @@ set-environment-vars() {
     set history=32
 }
 
+sourceif() {
+    for i in "$*"; do
+	[ -f "${i}" ] && . ${i}
+    done
+}
+
 reachable() {
     [ $# -lt 1 ] && echo "Usage: reachable host|ip" && return 1
     ping -c 1 -i 1 -t 1 "$1" > /dev/null 2>&1 && return 0
@@ -315,7 +321,8 @@ find-receipt() {
 
 shopt -s histappend
 [ "${TERM}" = "dumb" ] || use-fancy-prompt    
-[ -f "${HOME}/.cargo/env" ] && . ${HOME}/.cargo/env
-[ -f "${HOME}/.asdf/asdf.sh" ] && . ${HOME}/.asdf/asdf.sh
+
+# If these files exist, source them.
+sourceif "${HOME}/.cargo/env" "${HOME}/.asdf/asdf.sh"
 
 set-environment-vars
