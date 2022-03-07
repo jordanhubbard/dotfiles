@@ -103,13 +103,13 @@ set-environment-vars() {
 
 sourceif() {
     _EVAL=0
-    [ "$1" -eq "-e" ] && _EVAL=1 && shift
-    _FName="$1" && shift
-    if [ -f "${_FName}" ]; then
-	if [ "${_EVAL}" -gt 0 ]; then
-		eval "$(${_FName} $*)"
+    [ "$1" = "-e" ] && _EVAL=1 && shift
+    _FNAME="$1" && shift
+    if [ -f "${_FNAME}" ]; then
+	if [ "${_EVAL}" -eq 1 ]; then
+		eval "$(${_FNAME} $*)"
 	else
-		. ${_FName} $*
+		. ${_FNAME} $*
 	fi
     fi
 }
