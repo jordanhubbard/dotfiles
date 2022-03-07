@@ -326,12 +326,11 @@ find-receipt() {
     done
 }
 
-shopt -s histappend
-[ "${TERM}" = "dumb" ] || use-fancy-prompt    
-
 # If these files exist, source them.
 sourceif "${HOME}/.cargo/env"
 sourceif "${HOME}/.asdf/asdf.sh"
 sourceif -e "${HOME}/anaconda3/bin/conda" shell.bash hook
 
+shopt -s histappend
 set-environment-vars
+[ "${TERM}" = "dumb" ] || use-fancy-prompt    
