@@ -102,9 +102,16 @@ set-environment-vars() {
 }
 
 sourceif() {
-    for i in "$*"; do
-	[ -f "${i}" ] && . ${i}
-    done
+    _EVAL=0
+    [ "$1" -eq "-e" ] && _EVAL=1 && shift
+    _FName="$1" && shift
+    if [ -f "${_FName}" ]; then
+	if [ "${_EVAL}" -gt 0 ]; then
+		eval "$(${_FName} $*)"
+	else
+		. ${_FName} $*
+	fi
+    fi
 }
 
 reachable() {
@@ -323,6 +330,8 @@ shopt -s histappend
 [ "${TERM}" = "dumb" ] || use-fancy-prompt    
 
 # If these files exist, source them.
-sourceif "${HOME}/.cargo/env" "${HOME}/.asdf/asdf.sh"
+sourceif "${HOME}/.cargo/env"
+sourceif "${HOME}/.asdf/asdf.sh"
+sourceif -e "${HOME}/anaconda3/bin/conda" shell.bash hook
 
 set-environment-vars
