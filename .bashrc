@@ -329,6 +329,7 @@ find-receipt() {
 # If these files exist, source them.
 sourceif "${HOME}/.cargo/env"
 sourceif "${HOME}/.asdf/asdf.sh"
+sourceif -e "${HOME}/opt/anaconda3/bin/conda" shell.bash hook
 sourceif -e "${HOME}/anaconda3/bin/conda" shell.bash hook
 
 shopt -s histappend
