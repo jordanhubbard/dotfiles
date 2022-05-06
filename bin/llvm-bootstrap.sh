@@ -51,6 +51,11 @@ else
 fi
 cd build
 
+if [ -x /usr/local/bin/clang ]; then
+        export CC=clang
+        export CXX=clang++
+fi
+
 cmake -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;libcxx;libcxxabi;libunwind;lldb;compiler-rt;lld;polly' ../llvm || usage "Cmake step failed"
 make -j${_JOBS} || usage "Unable to build llvm project sources"
 sudo make install || usage "Installation failed"
