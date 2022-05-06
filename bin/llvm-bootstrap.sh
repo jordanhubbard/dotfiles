@@ -56,6 +56,6 @@ if [ -x /usr/local/bin/clang ]; then
         export CXX=clang++
 fi
 
-cmake -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;libcxx;libcxxabi;libunwind;lldb;compiler-rt;lld;polly' ../llvm || usage "Cmake step failed"
+cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;libcxx;libcxxabi;libunwind;lldb;compiler-rt;lld;polly' ../llvm || usage "Cmake step failed"
 make -j${_JOBS} || usage "Unable to build llvm project sources"
 sudo make install || usage "Installation failed"
