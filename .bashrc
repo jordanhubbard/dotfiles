@@ -26,7 +26,7 @@ makeworld() {
 		echo "Only applicable to FreeBSD"
 		return
 	fi
-	cd /usr/src && sudo make -j8 world kernel DESTDIR=/ 2>&1 | tee make.out
+	cd /usr/src && git pull && sudo make -j8 world kernel DESTDIR=/ 2>&1 | tee make.out
 }
 
 # Build and install just the Linux kernel + modules
