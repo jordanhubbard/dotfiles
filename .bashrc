@@ -15,6 +15,12 @@ dotsync() {
     cd $HOME/Src/dotfiles && git pull && make install
 }
 
+# Use the dns.toys DNS server to do various interesting things with DNS.
+# dy help - print all of the supported commands
+dy() {
+    dig +noall +answer +additional "$1" @dns.toys;
+}
+
 # Tell me if the OS is $1
 isOSNamed() {
     [ "`uname -s`" = "$1" ]
