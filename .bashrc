@@ -74,7 +74,7 @@ save-model() {
 
 # KVM related functions
 lsvm() {
-    virsh list --all
+    ssh ubumeh4.local virsh list --all
 }
 
 managevm() {
