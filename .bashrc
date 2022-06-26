@@ -72,6 +72,15 @@ save-model() {
 	popd
 }
 
+# KVM related functions
+lsvm() {
+    virsh list --all
+}
+
+managevm() {
+    ssh -Y ubumeh4.local virt-manager
+}
+
 set-environment-vars() {
     setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin
     setenv MANPATH /usr/share/man
