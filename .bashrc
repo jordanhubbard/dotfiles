@@ -24,12 +24,11 @@ dy() {
 zonedate() {
     _TZ=""
     _ZONE=""
-    _DATE=""
     pushd /usr/share/zoneinfo > /dev/null
     dir_zones=`find . -type f -a \! -name '[a-z]*' | sed -e 's/^.\///' | sort`
     zones=`find . -type f -a \! -name '[a-z]*' |xargs basename|sort`
     popd > /dev/null
-    while getopts hlt:d: flag; do
+    while getopts hlt: flag; do
 	case "$1" in
 	    -l)
 		echo $zones
@@ -37,11 +36,8 @@ zonedate() {
 	    -t)
 		_ZONE=${OPTARG}
 		;;
-	    -d)
-		_DATE=${OPTARG}
-		;;
 	    *)
-		echo 'usage: zonetime -l | -t zone | -d datestring'
+		echo 'usage: zonetime -l | -t zone'
 		return
 		;;
 	esac
@@ -53,13 +49,14 @@ zonedate() {
 	    if [ -z "${_TZ}" ]; then
 	        if echo ${x} | grep "${_ZONE}" > /dev/null; then
 		    _TZ="${x}"
+		    break;
 	   	fi
 	    fi
 	done
         if [ -z "${_TZ}" ]; then
 	    echo "Unknown timezone value ${_ZONE}"
 	else
-	    echo ${_TZ} " " `env TZ="${_TZ}" date`
+	    echo ${_TZ} `env TZ="${_TZ}" date`
 	fi
     fi
 }
