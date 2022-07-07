@@ -21,6 +21,49 @@ dy() {
     dig +noall +answer +additional "$1" @dns.toys;
 }
 
+zonetime() {
+    _TZ=""
+    _ZONE=""
+    _DATE=""
+    pushd /usr/share/zoneinfo > /dev/null
+    dir_zones=`find . -type f -a \! -name '[a-z]*' | sed -e 's/^.\///' | sort`
+    zones=`find . -type f -a \! -name '[a-z]*' |xargs basename|sort`
+    popd > /dev/null
+    while getopts hlt:d: flag; do
+	case "$1" in
+	    -l)
+		echo $zones
+		;;
+	    -t)
+		_ZONE=${OPTARG}
+		;;
+	    -d)
+		_DATE=${OPTARG}
+		;;
+	    *)
+		echo 'usage: zonetime -l | -t zone | -d datestring'
+		return
+		;;
+	esac
+    done
+    if [ -z "${_ZONE}" ]; then
+	date
+    else
+	for x in ${dir_zones}; do
+	    if [ -z "${_TZ}" ]; then
+	        if echo ${x} | grep "${_ZONE}" > /dev/null; then
+		    _TZ="${x}"
+	   	fi
+	    fi
+	done
+        if [ -z "${_TZ}" ]; then
+	    echo "Unknown timezone value ${_ZONE}"
+	else
+	    echo ${_TZ} " " `env TZ="${_TZ}" date`
+	fi
+    fi
+}
+
 # Tell me if the OS is $1
 isOSNamed() {
     [ "`uname -s`" = "$1" ]
