@@ -21,7 +21,7 @@ dy() {
     dig +noall +answer +additional "$1" @dns.toys;
 }
 
-zonetime() {
+zonedate() {
     _TZ=""
     _ZONE=""
     _DATE=""
