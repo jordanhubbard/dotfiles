@@ -23,29 +23,17 @@ dy() {
 
 zonedate() {
     _TZ=""
-    _ZONE=""
+    _ZONE="$*"
     pushd /usr/share/zoneinfo > /dev/null
     dir_zones=`find . -type f -a \! -name '[a-z]*' | sed -e 's/^.\///' | sort`
     zones=`find . -type f -a \! -name '[a-z]*' |xargs basename|sort`
     popd > /dev/null
-    while getopts hlt: flag; do
-	case "$1" in
-	    -l)
-		echo $zones
-		;;
-	    -t)
-		_ZONE=${OPTARG}
-		;;
-	    *)
-		echo 'usage: zonetime -l | -t zone'
-		return
-		;;
-	esac
-    done
+    echo Zone is ${_ZONE}
     if [ -z "${_ZONE}" ]; then
 	date
     else
 	for x in ${dir_zones}; do
+	    echo $x
 	    if [ -z "${_TZ}" ]; then
 	        if echo ${x} | grep "${_ZONE}" > /dev/null; then
 		    _TZ="${x}"
