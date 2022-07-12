@@ -28,12 +28,10 @@ zonedate() {
     dir_zones=`find . -type f -a \! -name '[a-z]*' | sed -e 's/^.\///' | sort`
     zones=`find . -type f -a \! -name '[a-z]*' |xargs basename|sort`
     popd > /dev/null
-    echo Zone is ${_ZONE}
     if [ -z "${_ZONE}" ]; then
 	date
     else
 	for x in ${dir_zones}; do
-	    echo $x
 	    if [ -z "${_TZ}" ]; then
 	        if echo ${x} | grep "${_ZONE}" > /dev/null; then
 		    _TZ="${x}"
