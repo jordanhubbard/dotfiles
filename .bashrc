@@ -12,7 +12,7 @@ dockercleanup() {
 
 # Re-sync dotfiles from git.
 dotsync() {
-    cd $HOME/Src/dotfiles && git pull && make install
+    pushd $HOME/Src/dotfiles && git pull && make install && popd
 }
 
 # Use the dns.toys DNS server to do various interesting things with DNS.
