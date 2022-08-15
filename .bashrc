@@ -297,7 +297,7 @@ findsym() {
 	DIR=$1
         shift
     fi
-    find "$DIR" -type f -a ! -path '*/.git/*' -print0 | xargs -0 grep $grepargs "$1"
+    find "$DIR" -type f -a ! -path '*/.git/*' -print0 | xargs -0 grep -e $grepargs "$1"
 }
 
 findfile() {
