@@ -300,6 +300,19 @@ findsym() {
     find "$DIR" -type f -a ! -path '*/.git/*' -print0 | xargs -0 grep $grepargs "$1"
 }
 
+findfile() {
+    matchargs="$1"
+    shift
+
+    if [ $# -lt 2 ]; then
+        DIR=.
+    else
+        DIR=$1
+        shift
+    fi
+    find "$DIR" -name "${matchargs}" -a ! -path '*/.git/*' -print
+}
+
 open() {
     if [ "$OSTYPE" = "linux-gnu" ]; then
 	xdg-open "$*"
