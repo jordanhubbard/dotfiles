@@ -82,17 +82,16 @@ makelinux() {
 # Entirely custom function for saving 3D models
 save-model() {
 	_DOWN=$HOME/Downloads
-	_MODELS=$HOME/STL-Models
-	pushd ${_DOWN}
+	_MODELS=/Volumes/Media/STL-Models
 	_NAME=`basename $1 .zip`
 	if [ "${_NAME}" = "$1" ]; then
-		echo "$0: Must specify a .zip file from the ${_DOWN} directory"		return
+		echo "$0: Must specify a .zip file from the ${_DOWN} directory"			return
 	fi
-
 	if [ ! -d "${_MODELS}" ]; then
 		echo "$0: No ${_MODELS} directory."
 		return
 	fi
+	pushd ${_DOWN}
 	cd ${_MODELS}
 	mkdir -p ${_NAME} && cd ${_NAME} && unzip ${_DOWN}/${_NAME}.zip && rm ${_DOWN}/${_NAME}.zip
 	popd
