@@ -120,7 +120,11 @@ set-environment-vars() {
     [ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
     [ -f "${_NVMINIT}" ] && source ${_NVMINIT}
     COOLDIRS="$HOME/.local $HOME/anaconda3 /opt/local /snap /opt/X11 /usr/local/cuda /usr/local $GOPATH $HOME/.cargo"
-    
+
+    if which python > /dev/null; then
+	COOLDIRS="`python -m site --user-base` $COOLDIRS"
+    fi
+
     for i in ${COOLDIRS}; do
         [ -d $i/sbin ] && PATH=$PATH:$i/sbin
         [ -d $i/bin ] && PATH=$PATH:$i/bin
