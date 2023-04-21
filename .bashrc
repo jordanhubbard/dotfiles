@@ -135,6 +135,11 @@ set-environment-vars() {
     done
     PATH=$PATH:.
     
+    if which python > /dev/null; then
+        _PYTHON_SITE=`python -m site --user-base`
+        [ -d ${_PYTHON_SITE}/bin ] && PATH="$PATH:${_PYTHON_SITE}/bin"
+    fi
+
     alias fetch='curl -C - -O $*'
     alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Resources/jsc'
     
