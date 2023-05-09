@@ -51,8 +51,9 @@ Your version of Emacs does not support SSL connections,
  ;; If there is more than one, they won't work right.
  '(load-home-init-file t t)
  '(package-selected-packages
-   (quote
-    (web-mode http markdownfmt markdown-mode+ markdown-preview-mode markdown-mode markup-faces markup flycheck-elixir flycheck-elm flycheck-mix flymake-elixir alchemist elixir-yasnippets elixir-mode))))
+   '(web-mode http markdownfmt markdown-mode+ markdown-preview-mode markdown-mode markup-faces markup flycheck-elixir flycheck-elm flycheck-mix flymake-elixir alchemist elixir-yasnippets elixir-mode))
+ '(warning-suppress-log-types '((comp) (comp)))
+ '(warning-suppress-types '((comp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
