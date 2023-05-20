@@ -83,7 +83,7 @@ makelinux() {
 save-model() {
 	_DOWN=$HOME/Downloads
 	_MODELS=/Volumes/Media/STL-Models
-	_NAME=`basename $1 .zip`
+	_NAME="`basename $1 .zip`"
 	if [ "${_NAME}" = "$1" ]; then
 		echo "$0: Must specify a .zip file from the ${_DOWN} directory"			return
 	fi
@@ -91,9 +91,9 @@ save-model() {
 		echo "$0: No ${_MODELS} directory."
 		return
 	fi
-	pushd ${_DOWN}
-	cd ${_MODELS}
-	mkdir -p ${_NAME} && cd ${_NAME} && unzip ${_DOWN}/${_NAME}.zip && rm ${_DOWN}/${_NAME}.zip
+	pushd "${_DOWN}"
+	cd "${_MODELS}"
+	mkdir -p "${_NAME}" && cd "${_NAME}" && unzip "${_DOWN}/${_NAME}.zip" && rm "${_DOWN}/${_NAME}.zip"
 	popd
 }
 
