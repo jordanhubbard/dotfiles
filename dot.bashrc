@@ -83,7 +83,7 @@ makelinux() {
 save-model() {
 	_DOWN=$HOME/Downloads
 	_MODELS=/Volumes/Media/STL-Models
-	_NAME="`basename $1 .zip`"
+	_NAME="`basename \"$1\" .zip`"
 	if [ "${_NAME}" = "$1" ]; then
 		echo "$0: Must specify a .zip file from the ${_DOWN} directory"			return
 	fi
