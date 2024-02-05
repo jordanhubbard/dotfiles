@@ -116,6 +116,9 @@ set-environment-vars() {
     setenv ELIXIR_EDITOR emacs
     setenv _NVMINIT /opt/local/share/nvm/init-nvm.sh
     setenv HISTCONTROL ignoredups:erasedups
+    setenv HOMEBREW_PREFIX "/opt/homebrew"
+    setenv HOMEBREW_CELLAR "/opt/homebrew/Cellar"
+    setenv HOMEBREW_REPOSITORY "/opt/homebrew"
     
     # All path setting magic goes here.
     [ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
