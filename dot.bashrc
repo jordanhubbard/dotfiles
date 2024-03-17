@@ -123,7 +123,7 @@ set-environment-vars() {
     # All path setting magic goes here.
     [ -z "$GOPATH" ] && export GOPATH="$HOME/gocode"
     [ -f "${_NVMINIT}" ] && source ${_NVMINIT}
-    COOLDIRS="$HOME/.local $HOME/anaconda3 /opt/local /snap /opt/X11 /usr/local/cuda /usr/local /opt/homebrew $GOPATH $HOME/.cargo"
+    COOLDIRS="$HOME/.local $HOME/anaconda3 /opt/local /snap /opt/X11 /usr/local/cuda /usr/local ${HOMEBREW_PREFIX} $GOPATH $HOME/.cargo"
 
     if which python > /dev/null; then
 	COOLDIRS="`python -m site --user-base` $COOLDIRS"
@@ -144,6 +144,9 @@ set-environment-vars() {
         [ -d ${_PYTHON_SITE}/bin ] && PATH="$PATH:${_PYTHON_SITE}/bin"
     fi
 
+}
+
+set-aliases() {
     alias fetch='curl -C - -O $*'
     alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Resources/jsc'
     
@@ -151,7 +154,6 @@ set-environment-vars() {
     alias pu=pushd
     alias po=popd
     alias rehash='hash -r'
-    set history=32
 }
 
 sourceif() {
@@ -171,15 +173,6 @@ reachable() {
     [ $# -lt 1 ] && echo "Usage: reachable host|ip" && return 1
     ping -c 1 -i 1 -t 1 "$1" > /dev/null 2>&1 && return 0
     return 2
-}
-
-sprungeit() {
-    [ $# -lt 1 ] && echo "Usage: sprungit file | text" && return 1
-    if [ -f $1 ]; then
-	cat $1 | curl -F 'sprunge=<-' http://sprunge.us
-    else
-	echo "$*" | curl -F 'sprunge=<-' http://sprunge.us
-    fi
 }
 
 enable-xrdp() {
@@ -400,4 +393,5 @@ sourceif -e "${HOME}/anaconda3/bin/conda" shell.bash hook
 
 shopt -s histappend
 set-environment-vars
+set-aliases
 [ "${TERM}" = "dumb" ] || use-fancy-prompt    
