@@ -269,11 +269,11 @@ remote-tmux() {
 }
 
 portupdate() {
-    if [ -d $HOME/Src/macports-ports ]; then
-	pushd $HOME/Src/macports-ports
+    if [ -d $HOME/Src/macports-ports/ ]; then
+	pushd $HOME/Src/macports-ports/
 	git pull && portindex
 	popd
-	if [ -d $HOME/Src/macports-base ]; then
+	if [ -d $HOME/Src/macports-base/ ]; then
 	    pushd $HOME/Src/macports-base
 	    git pull && make all && sudo make install
 	    popd
