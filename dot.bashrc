@@ -88,7 +88,7 @@ save-model() {
 		echo "$0: Must specify a .zip file from the ${_DOWN} directory"			return
 	fi
 	mkdir -p "${_MODELS}"
-	if [ ! -d "${_MODELS}" ]; then
+	if [ ! -d "${_MODELS}/" ]; then
 		echo "$0: No ${_MODELS} directory."
 		return
 	fi
@@ -130,18 +130,18 @@ set-environment-vars() {
     fi
 
     for i in ${COOLDIRS}; do
-        [ -d $i/sbin ] && PATH=$PATH:$i/sbin
-        [ -d $i/bin ] && PATH=$PATH:$i/bin
-        [ -d $i/lib ] && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$i/lib
-        [ -d $i/man ] && MANPATH=$MANPATH:$i/man
-        [ -d $i/share/man ] && MANPATH=$MANPATH:$i/share/man
-        [ -d $i/info ] && INFOPATH=$INFOPATH:$i/info
+        [ -d $i/sbin/ ] && PATH=$PATH:$i/sbin
+        [ -d $i/bin/ ] && PATH=$PATH:$i/bin
+        [ -d $i/lib/ ] && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$i/lib
+        [ -d $i/man/ ] && MANPATH=$MANPATH:$i/man
+        [ -d $i/share/man/ ] && MANPATH=$MANPATH:$i/share/man
+        [ -d $i/info/ ] && INFOPATH=$INFOPATH:$i/info
     done
     PATH=$PATH:.
     
     if which python > /dev/null; then
         _PYTHON_SITE=`python -m site --user-base`
-        [ -d ${_PYTHON_SITE}/bin ] && PATH="$PATH:${_PYTHON_SITE}/bin"
+        [ -d ${_PYTHON_SITE}/bin/ ] && PATH="$PATH:${_PYTHON_SITE}/bin"
     fi
 
 }
