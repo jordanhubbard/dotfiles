@@ -217,6 +217,10 @@ psg()	{
     ps ax|grep $*
 }
 
+lst() {
+    ls -lt $* |more
+}
+
 vc() {
     [ $# -lt 1 ] && echo "Usage: s hostname" && return
     open vnc://$1.local
