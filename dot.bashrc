@@ -95,7 +95,6 @@ save-model() {
 	pushd "${_DOWN}"
 	cd "${_MODELS}"
 	mkdir -p "${_NAME}" && cd "${_NAME}" && unzip "${_DOWN}/${_NAME}.zip" && rm "${_DOWN}/${_NAME}.zip"
-	popd
 }
 
 # KVM related functions
