@@ -129,18 +129,18 @@ set-environment-vars() {
     fi
 
     for i in ${COOLDIRS}; do
-        [ -d $i/sbin/ ] && PATH=$PATH:$i/sbin
-        [ -d $i/bin/ ] && PATH=$PATH:$i/bin
-        [ -d $i/lib/ ] && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$i/lib
-        [ -d $i/man/ ] && MANPATH=$MANPATH:$i/man
-        [ -d $i/share/man/ ] && MANPATH=$MANPATH:$i/share/man
-        [ -d $i/info/ ] && INFOPATH=$INFOPATH:$i/info
+        [ -d $i/sbin/ ] && PATH=$i/sbin:$PATH
+        [ -d $i/bin/ ] && PATH=$i/bin:$PATH
+        [ -d $i/lib/ ] && LD_LIBRARY_PATH=$i/lib:$LD_LIBRARY_PATH
+        [ -d $i/man/ ] && MANPATH=$i/man:$MANPATH
+        [ -d $i/share/man/ ] && MANPATH=$i/share/man:$MANPATH
+        [ -d $i/info/ ] && INFOPATH=$i/info:$INFOPATH
     done
     PATH=$PATH:.
     
     if which python > /dev/null; then
         _PYTHON_SITE=`python -m site --user-base`
-        [ -d ${_PYTHON_SITE}/bin/ ] && PATH="$PATH:${_PYTHON_SITE}/bin"
+        [ -d ${_PYTHON_SITE}/bin/ ] && PATH="${_PYTHON_SITE}/bin:$PATH"
     fi
 
 }
