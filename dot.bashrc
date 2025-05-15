@@ -25,8 +25,8 @@ zonedate() {
     _TZ=""
     _ZONE="$*"
     pushd /usr/share/zoneinfo > /dev/null
-    dir_zones=`find . -type f -a \! -name '[a-z]*' | sed -e 's/^.\///' | sort`
-    zones=`find . -type f -a \! -name '[a-z]*' |xargs basename|sort`
+    dir_zones=`find . -type f | sed -e 's/^.\///' | sort`
+    zones=`find . -type f |xargs basename|sort`
     popd > /dev/null
     if [ -z "${_ZONE}" ]; then
 	date
