@@ -22,30 +22,44 @@ dy() {
 }
 
 zonedate() {
-    _TZ=""
-    _ZONE="$*"
-    pushd /usr/share/zoneinfo > /dev/null
-    dir_zones=`find . -type f | sed -e 's/^.\///' | sort`
-    zones=`find . -type f |xargs basename|sort`
-    popd > /dev/null
-    if [ -z "${_ZONE}" ]; then
-	date
-    else
-	for x in ${dir_zones}; do
-	    if [ -z "${_TZ}" ]; then
-	        if echo ${x} | grep "${_ZONE}" > /dev/null; then
-		    _TZ="${x}"
-		    break;
-	   	fi
-	    fi
-	done
-        if [ -z "${_TZ}" ]; then
-	    echo "Unknown timezone value ${_ZONE}"
-	else
-	    echo ${_TZ} `env TZ="${_TZ}" date`
-	fi
+    local zone="$*"
+    local found=0
+    
+    # Normalize input: remove spaces, make lowercase
+    local norm_zone
+    norm_zone=$(echo "$zone" | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+
+    # Auto-detect the real zoneinfo directory
+    local zoneinfo_dir
+    zoneinfo_dir=$(realpath /usr/share/zoneinfo)
+    if [[ ! -d $zoneinfo_dir ]]; then
+        echo "Zoneinfo directory not found: $zoneinfo_dir"
+        return 2
     fi
-}
+
+    # Search recursively through zoneinfo for matching timezone
+    while IFS= read -r tz; do
+        # Remove zoneinfo_dir prefix
+        clean_tz=$(echo "$tz" | sed "s|$zoneinfo_dir/||")
+        # Normalize timezone: remove spaces, underscores, make lowercase
+        norm_clean_tz=$(echo "$clean_tz" | tr -d ' _' | tr '[:upper:]' '[:lower:]')
+        # Also check the last component (e.g., 'Paris' in 'Europe/Paris')
+        last_component=$(basename "$clean_tz")
+        norm_last_component=$(echo "$last_component" | tr -d ' _' | tr '[:upper:]' '[:lower:]')
+        if [[ "$norm_clean_tz" == *"$norm_zone"* ]] || [[ "$norm_last_component" == "$norm_zone" ]]; then
+            echo "Using timezone: $clean_tz"
+            TZ="$clean_tz" date
+            found=1
+            break
+        fi
+    done < <(find "$zoneinfo_dir" -type f)
+
+    # Handle case where timezone wasn't found
+    if [ $found -eq 0 ]; then
+        echo "Timezone '$zone' not found"
+        return 1
+    fi
+} 
 
 # Tell me if the OS is $1
 isOSNamed() {
