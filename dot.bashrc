@@ -412,7 +412,7 @@ shopt -s histappend
 set-environment-vars
 set-aliases
 
-setenv OLLAMA_HOST http://jordanh-cuda-validator.hrd.nvidia.com:11434
+setenv OLLAMA_HOST http://localhost:11434
 setenv OLLAMA_API_BASE ${OLLAMA_HOST}
 
 [ "${TERM}" = "dumb" ] || use-fancy-prompt    
