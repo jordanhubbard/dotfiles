@@ -121,7 +121,7 @@ managevm() {
 }
 
 set-environment-vars() {
-    setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:/usr/games:$HOME/Bin
+    setenv PATH /sbin:/usr/sbin:/bin:/usr/bin:$HOME/Bin:$HOME/.local/bin
     setenv MANPATH /usr/share/man
     setenv INFOPATH /usr/share/info
     setenv ERL_AFLAGS "-kernel shell_history enabled"
