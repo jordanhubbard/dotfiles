@@ -1,70 +1,116 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 """
-Extract SONAME of a shared library.                     
+Extract SONAME of a shared library.
+
+This script extracts the SONAME (shared object name) from ELF shared libraries.
+It will attempt to use pyelftools if available, otherwise falls back to objdump.
 """
 
 import sys
+import os
+from pathlib import Path
 
-if len(sys.argv) < 2:
-    print('usage: ' + sys.argv[0] + ' <library path>')
-    sys.exit(0)
-filename = sys.argv[1]
 
-try:
-    import elftools
-except ImportError:
+def print_usage():
+    """Print usage information and exit."""
+    print(f'Usage: {sys.argv[0]} <library path>')
+    print('\nExtracts the SONAME from an ELF shared library.')
+    print('\nExample:')
+    print(f'  {sys.argv[0]} /usr/lib/x86_64-linux-gnu/libc.so.6')
+    sys.exit(1)
+
+
+def get_soname_with_elftools(filename):
+    """Extract SONAME using pyelftools library."""
+    try:
+        from elftools.elf.elffile import ELFFile
+        from elftools.elf.dynamic import DynamicSection
+    except ImportError as e:
+        raise ImportError('pyelftools not available') from e
+
+    try:
+        with open(filename, 'rb') as f:
+            elf_file = ELFFile(f)
+            
+            # Look for the dynamic section
+            for section in elf_file.iter_sections():
+                if not isinstance(section, DynamicSection):
+                    continue
+                
+                # Search for SONAME tag (DT_SONAME = 14)
+                for tag in section.iter_tags():
+                    if tag.entry.d_tag == 'DT_SONAME':
+                        return tag.soname
+            
+            return None
+            
+    except (OSError, IOError) as e:
+        print(f'Error reading file: {e}', file=sys.stderr)
+        sys.exit(2)
+    except Exception as e:
+        print(f'Error parsing ELF file: {e}', file=sys.stderr)
+        sys.exit(2)
+
+
+def get_soname_with_objdump(filename):
+    """Extract SONAME using objdump as fallback."""
     import re
     import subprocess
-
-    def get_soname(filename):
-
-        try:
-            out = subprocess.check_output(['objdump', '-p', filename])
-        except:
-            return ''
-        else:
-            result = re.search('^\s+SONAME\s+(.+)$',out,re.MULTILINE)
-            if result:
-                return result.group(1)
-            else:
-                return ''
     
-else:
-    import ctypes
-    import elftools.elf.elffile as elffile
-    import elftools.construct.macros as macros
-    import elftools.elf.structs as structs
+    try:
+        result = subprocess.run(
+            ['objdump', '-p', filename],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        match = re.search(r'^\s+SONAME\s+(.+)$', result.stdout, re.MULTILINE)
+        return match.group(1) if match else None
+        
+    except subprocess.CalledProcessError as e:
+        print(f'Error running objdump: {e}', file=sys.stderr)
+        sys.exit(2)
+    except FileNotFoundError:
+        print('Error: objdump not found in PATH', file=sys.stderr)
+        sys.exit(2)
 
-    def get_soname(filename):
 
-        stream = open(filename, 'rb')
-        f = elffile.ELFFile(stream)
-        dynamic = f.get_section_by_name('.dynamic')
-        dynstr = f.get_section_by_name('.dynstr')
+def main():
+    """Main entry point."""
+    if len(sys.argv) < 2 or sys.argv[1] in ('-h', '--help'):
+        print_usage()
+    
+    filename = sys.argv[1]
+    
+    # Validate input file
+    if not os.path.exists(filename):
+        print(f'Error: File not found: {filename}', file=sys.stderr)
+        sys.exit(2)
+    
+    if not os.path.isfile(filename):
+        print(f'Error: Not a file: {filename}', file=sys.stderr)
+        sys.exit(2)
+    
+    if not os.access(filename, os.R_OK):
+        print(f'Error: File not readable: {filename}', file=sys.stderr)
+        sys.exit(2)
+    
+    # Try pyelftools first, fall back to objdump
+    try:
+        soname = get_soname_with_elftools(filename)
+    except ImportError:
+        soname = get_soname_with_objdump(filename)
+    
+    # Print result
+    if soname:
+        print(f'SONAME: {soname}')
+        sys.exit(0)
+    else:
+        print('No SONAME found')
+        sys.exit(1)
 
-        # Handle libraries built for different machine architectures:         
-        if f.header['e_machine'] == 'EM_X86_64':
-            st = structs.Struct('Elf64_Dyn',
-                                macros.ULInt64('d_tag'),
-                                macros.ULInt64('d_val'))
-        elif f.header['e_machine'] == 'EM_386':
-            st = structs.Struct('Elf32_Dyn',
-                                macros.ULInt32('d_tag'),
-                                macros.ULInt32('d_val'))
-        else:
-            raise RuntimeError('unsupported machine architecture')
 
-        entsize = dynamic['sh_entsize']
-        for k in xrange(dynamic['sh_size']/entsize):
-            result = st.parse(dynamic.data()[k*entsize:(k+1)*entsize])
-
-            # The following value for the SONAME tag is specified in elf.h:  
-            if result.d_tag == 14:
-                return dynstr.get_string(result.d_val)
-            
-soname = get_soname(filename)
-if soname:
-    print('SONAME: %s' % soname)
-else:
-    print('no SONAME found')
+if __name__ == '__main__':
+    main()

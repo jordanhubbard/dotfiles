@@ -1,33 +1,188 @@
 #!/usr/bin/env bash
 
-if [ -z "$1" ]
-  then
-    echo "The run script takes a command as a argument. E.g., try ./run 'ls' "
+#
+# run - Execute commands inside a Docker container
+#
+# This script runs commands inside a Docker-based development environment,
+# with the current directory mounted and proper user permissions.
+#
+# Usage: run <command> [args...]
+#   CONTAINER_NAME env var to override container name
+#
+# Example:
+#   run ls -la
+#   run make test
+#   CONTAINER_NAME=my-container run python script.py
+#
+
+set -euo pipefail
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+info() {
+    echo -e "${BLUE}[INFO]${NC} $*" >&2
+}
+
+warn() {
+    echo -e "${YELLOW}[WARN]${NC} $*" >&2
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $*" >&2
+}
+
+die() {
+    error "$*"
     exit 1
+}
+
+usage() {
+    cat << EOF
+Usage: $(basename "$0") <command> [args...]
+
+Execute a command inside a Docker development container.
+
+The container is built automatically on first run using a Dockerfile in the
+script's directory. The current directory is mounted inside the container
+at the same path.
+
+Environment Variables:
+  CONTAINER_NAME    Override default container name
+                    (default: programming_station-for-\$USER)
+
+Examples:
+  $(basename "$0") ls -la                    # List files
+  $(basename "$0") 'make test'               # Run tests
+  $(basename "$0") python script.py          # Run Python script
+  CONTAINER_NAME=my-env $(basename "$0") sh  # Use custom container
+
+Options:
+  -h, --help    Show this help message
+
+Notes:
+  - Runs in privileged mode for access to performance counters
+  - SSH agent forwarding is enabled if available
+  - Current directory is mounted at the same path inside container
+  - Container runs as your user (not root) for proper permissions
+
+EOF
+    exit "${1:-0}"
+}
+
+# Handle help flag
+if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+    usage 0
 fi
 
-set -o noglob
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+# Get script directory
+SCRIPTPATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
-COMMAND=$@
+# Get command to run
+COMMAND="$*"
 
+# Container name
+CONTAINER_NAME="${CONTAINER_NAME:-programming_station-for-$USER}"
 
+info "Docker Container Runner"
+info "Container: ${CONTAINER_NAME}"
+info "Command: ${COMMAND}"
 
-container_name=${CONTAINER_NAME:-"programming_station-for-$USER"}
+# Check for Docker
+if ! command -v docker &> /dev/null; then
+    die "Docker not found. Please install Docker Desktop: https://www.docker.com/products/docker-desktop"
+fi
 
-command -v docker >/dev/null 2>&1 || { echo >&2 "Please install docker. E.g., go to https://www.docker.com/products/docker-desktop "; exit 1; }
+# Check if Docker daemon is running
+if ! docker info &> /dev/null; then
+    die "Docker daemon is not running. Please start Docker Desktop."
+fi
 
-docker info >/dev/null 2>&1 || { echo >&2 "Docker server is not running? "; exit 1; }
+# Set up SSH agent forwarding (macOS and Linux compatible)
+SSHPARAM=()
 
-SSHPARAM=""
-[ -e "${SSH_AUTH_SOCK}" ] && SSHPARAM="--volume /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock  --env SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock"
-[ -e "${HOME}/.ssh" ] && SSHPARAM="--volume ${HOME}/.ssh:/home/$USER/.ssh:ro"  
+# macOS Docker Desktop SSH agent socket
+if [[ -e "/run/host-services/ssh-auth.sock" ]]; then
+    SSHPARAM+=(
+        "--volume" "/run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock"
+        "--env" "SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock"
+    )
+    info "SSH agent forwarding enabled (macOS)"
+# Standard SSH_AUTH_SOCK (Linux)
+elif [[ -n "${SSH_AUTH_SOCK:-}" && -e "${SSH_AUTH_SOCK}" ]]; then
+    SSHPARAM+=(
+        "--volume" "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+        "--env" "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}"
+    )
+    info "SSH agent forwarding enabled (Linux)"
+# Fallback to mounting .ssh directory (read-only)
+elif [[ -d "${HOME}/.ssh" ]]; then
+    SSHPARAM+=(
+        "--volume" "${HOME}/.ssh:/home/${USER}/.ssh:ro"
+    )
+    info "SSH keys mounted (read-only)"
+else
+    warn "No SSH authentication available"
+fi
 
+# Check if container image exists
+if ! docker image inspect "$CONTAINER_NAME" &> /dev/null; then
+    info "Container image not found, building..."
+    
+    # Check for Dockerfile
+    DOCKERFILE="${SCRIPTPATH}/Dockerfile"
+    if [[ ! -f "$DOCKERFILE" ]]; then
+        die "Dockerfile not found at: $DOCKERFILE"
+    fi
+    
+    info "Building container image: ${CONTAINER_NAME}"
+    info "Dockerfile: ${DOCKERFILE}"
+    
+    # Build the container
+    if ! docker build \
+        -t "$CONTAINER_NAME" \
+        -f "$DOCKERFILE" \
+        --build-arg USER_NAME="$USER" \
+        --build-arg USER_ID="$(id -u)" \
+        --build-arg GROUP_ID="$(id -g)" \
+        "${SCRIPTPATH}"; then
+        die "Failed to build container image"
+    fi
+    
+    info "Container image built successfully"
+else
+    info "Using existing container image"
+fi
 
-docker image inspect $container_name >/dev/null 2>&1 || ( echo "instantiating the container" ; docker build -t $container_name -f $SCRIPTPATH/Dockerfile --build-arg USER_NAME="$USER"  --build-arg USER_ID=$(id -u)  --build-arg GROUP_ID=$(id -g) .  )
+# Get current directory for mounting
+CURRENT_DIR="$(pwd)"
 
-# We run in privileged mode to have access to performance counters.
-docker run --rm -it --privileged $SSHPARAM -v $(pwd):$(pwd):Z  -w $(pwd)  $container_name sh -c "$COMMAND"
+# Run the container
+info "Starting container..."
+
+# Build docker run command
+DOCKER_CMD=(
+    docker run
+    --rm                          # Remove container after exit
+    -it                           # Interactive with TTY
+    --privileged                  # Access to performance counters
+    "${SSHPARAM[@]}"             # SSH parameters
+    --volume "${CURRENT_DIR}:${CURRENT_DIR}:Z"  # Mount current dir with SELinux label
+    --workdir "${CURRENT_DIR}"   # Set working directory
+    "$CONTAINER_NAME"
+    sh -c "$COMMAND"
+)
+
+# Execute the command
+if ! "${DOCKER_CMD[@]}"; then
+    EXIT_CODE=$?
+    error "Command failed with exit code: $EXIT_CODE"
+    exit $EXIT_CODE
+fi
 
 
 
