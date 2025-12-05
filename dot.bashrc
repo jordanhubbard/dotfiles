@@ -341,7 +341,9 @@ managevm() {
         echo "Error: ssh not found" >&2
         return 1
     fi
-    ssh -Y ubumeh4.local virt-manager
+    local host="ubumeh4"
+    [[ "$host" != *.* ]] && host="${host}.local"
+    ssh -Y "$host" virt-manager
 }
 
 # ============================================================================
@@ -563,7 +565,9 @@ vc() {
         echo "Usage: vc hostname" >&2
         return 1
     fi
-    open "vnc://$1.local"
+    local host="$1"
+    [[ "$host" != *.* ]] && host="${host}.local"
+    open "vnc://${host}"
 }
 
 # SSH helpers
@@ -586,7 +590,8 @@ s() {
         shift
     fi
     
-    ${SSH_CMD:-ssh} "$@" "${user}@${host}.local"
+    [[ "$host" != *.* ]] && host="${host}.local"
+    ${SSH_CMD:-ssh} "$@" "${user}@${host}"
 }
 
 # Remote tmux session
