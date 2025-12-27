@@ -74,6 +74,28 @@ dockercleanup() {
 # DOTFILES MANAGEMENT
 # ============================================================================
 
+# Edit a specific dotfile
+dotedit() {
+    local dotfiles_dir="${HOME}/Src/dotfiles"
+    
+    if [[ ! -d "$dotfiles_dir" ]]; then
+        echo "Error: Dotfiles directory not found: $dotfiles_dir" >&2
+        return 1
+    fi
+    dotsync
+    TGT=dot$1
+
+    pushd ${dotfiles_dir}
+    if [ ! -f ${TGT} ]; then
+	echo "${TGT} files does not exist.  Create manually in ${dotfiles_dir} first."
+	return 1
+    fi
+    ${EDITOR-vi} ${TGT}
+    git add ${TGT}
+    git commit
+    git push
+}
+
 # Re-sync dotfiles from git
 dotsync() {
     local dotfiles_dir="${HOME}/Src/dotfiles"
