@@ -94,6 +94,8 @@ dotedit() {
     git add ${TGT}
     git commit
     git push
+    dotsync
+    popd
 }
 
 # Re-sync dotfiles from git
