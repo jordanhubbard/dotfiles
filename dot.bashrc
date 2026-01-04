@@ -556,33 +556,6 @@ cc-rabid() {
 # CONVENIENCE FUNCTIONS
 # ============================================================================
 
-# Build droid helper - convenience wrapper for creating droids
-# Usage: bd 'description text' 1
-bd() {
-    if [[ $# -lt 2 ]]; then
-        echo "Usage: bd 'description' priority" >&2
-        echo "  priority: 1 (high), 2 (medium), 3 (low)" >&2
-        return 1
-    fi
-    
-    local description="$1"
-    local priority_num="$2"
-    local priority
-    
-    case "$priority_num" in
-        1) priority="high" ;;
-        2) priority="medium" ;;
-        3) priority="low" ;;
-        high|medium|low) priority="$priority_num" ;;
-        *)
-            echo "Error: Invalid priority '$priority_num'. Use 1 (high), 2 (medium), or 3 (low)" >&2
-            return 1
-            ;;
-    esac
-    
-    droid --description "$description" --priority "$priority"
-}
-
 # Make directory and cd into it
 mkcd() {
     if [[ $# -lt 1 ]]; then
