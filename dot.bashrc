@@ -91,7 +91,7 @@ dotedit() {
 	return 1
     fi
     ${EDITOR-vi} ${TGT}
-    git add ${TGT}
+    git add .
     git commit
     git push
     dotsync
