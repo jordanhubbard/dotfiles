@@ -799,16 +799,6 @@ set-aliases() {
     # Bash rehash
     alias rehash='hash -r'
     
-    # Safety aliases
-    alias rm='rm -i'
-    alias cp='cp -i'
-    alias mv='mv -i'
-    
-    # Listing aliases
-    alias ll='ls -lh'
-    alias la='ls -lAh'
-    alias l='ls -CF'
-    
     # Grep with color
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
