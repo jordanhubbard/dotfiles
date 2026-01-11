@@ -500,6 +500,13 @@ gitcl() {
     git clone --recurse-submodules "$@"
 }
 
+# Get a repo all the way back to upstream
+gitreset() {
+    git fetch --all --prune
+    git reset --hard @{u}
+    git clean -fdx
+}
+
 # Find symbol in files
 findsym() {
     local grepargs=""
