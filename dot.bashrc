@@ -506,35 +506,23 @@ gitreset() {
 
     git fetch --all --prune
 
-    # What branch are we on? Empty => detached HEAD (or error)
-    b="$(git symbolic-ref -q --short HEAD || true)"
-
-    if [ -z "$b" ]; then
-        # Prefer origin/main (your fork), fall back to upstream/main
+    # Prefer: upstream of current branch (if we have one)
+    if git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+        target='@{u}'
+    else
+        # Otherwise: pick a sensible default ref without checking out the branch
         if git show-ref --verify --quiet refs/remotes/origin/main; then
-            git checkout -B main origin/main
+            target='refs/remotes/origin/main'
         elif git show-ref --verify --quiet refs/remotes/upstream/main; then
-            git checkout -B main upstream/main
+            target='refs/remotes/upstream/main'
         else
             echo "gitreset: can't find origin/main or upstream/main"
             return 1
         fi
-        b="main"
     fi
 
-    # Ensure this branch has an upstream; if not, set it to origin/<branch> if present
-    if ! git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
-        if git show-ref --verify --quiet "refs/remotes/origin/$b"; then
-            git branch --set-upstream-to="origin/$b" "$b"
-        elif git show-ref --verify --quiet "refs/remotes/upstream/$b"; then
-            git branch --set-upstream-to="upstream/$b" "$b"
-        else
-            echo "gitreset: no upstream found for branch '$b'"
-            return 1
-        fi
-    fi
-
-    git reset --hard '@{u}'
+    # Reset index + working tree to the target commit (no need to own the branch)
+    git reset --hard "$target"
     git clean -fdx
 }
 
