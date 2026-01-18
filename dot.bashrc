@@ -502,8 +502,39 @@ gitcl() {
 
 # Get a repo all the way back to upstream
 gitreset() {
+    set -e
+
     git fetch --all --prune
-    git reset --hard @{u}
+
+    # What branch are we on? Empty => detached HEAD (or error)
+    b="$(git symbolic-ref -q --short HEAD || true)"
+
+    if [ -z "$b" ]; then
+        # Prefer origin/main (your fork), fall back to upstream/main
+        if git show-ref --verify --quiet refs/remotes/origin/main; then
+            git checkout -B main origin/main
+        elif git show-ref --verify --quiet refs/remotes/upstream/main; then
+            git checkout -B main upstream/main
+        else
+            echo "gitreset: can't find origin/main or upstream/main"
+            return 1
+        fi
+        b="main"
+    fi
+
+    # Ensure this branch has an upstream; if not, set it to origin/<branch> if present
+    if ! git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+        if git show-ref --verify --quiet "refs/remotes/origin/$b"; then
+            git branch --set-upstream-to="origin/$b" "$b"
+        elif git show-ref --verify --quiet "refs/remotes/upstream/$b"; then
+            git branch --set-upstream-to="upstream/$b" "$b"
+        else
+            echo "gitreset: no upstream found for branch '$b'"
+            return 1
+        fi
+    fi
+
+    git reset --hard '@{u}'
     git clean -fdx
 }
 
