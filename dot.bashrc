@@ -852,6 +852,10 @@ HISTSIZE=10000
 HISTFILESIZE=20000
 HISTCONTROL=ignoredups:erasedups
 
+# AI tool configuration
+BAISH_OPENAI_BASE_URL=http://sparky.local
+BAISH_MODEL=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
+
 # Apply settings
 set-environment-vars
 set-aliases
