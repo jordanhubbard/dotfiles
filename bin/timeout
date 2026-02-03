@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+
+#
+# timeout - Run a command with a time limit
+#
+# This script provides a wrapper for the GNU timeout command. On Linux systems
+# with the native timeout command, it passes through to it. On systems without
+# the native command (e.g., macOS), it provides a Python-based implementation
+# that is command-line compatible with GNU timeout.
+#
+# Usage: timeout [OPTION] DURATION COMMAND [ARG]...
+#
+# Examples:
+#   timeout 10s ./long-running-script.sh
+#   timeout -s KILL 5 python script.py
+#   timeout --kill-after=10s 5s make test
+#
+
+# Check if native timeout command exists (common on Linux)
+# We need to check if it's the GNU timeout, not a shell builtin or other timeout
+if command -v timeout >/dev/null 2>&1; then
+    # Check if this is the real timeout command (not this script)
+    TIMEOUT_PATH=$(command -v timeout)
+    # If the path is this script, we need to use the fallback
+    # Otherwise, use the native timeout
+    if [[ "$TIMEOUT_PATH" != "$0" ]] && [[ "$(basename "$TIMEOUT_PATH")" == "timeout" ]]; then
+        # Found a real timeout command, use it
+        exec "$TIMEOUT_PATH" "$@"
+    fi
+fi
+
+# No native timeout found, use Python implementation
+exec python3 - "$@" <<'PYTHON_EOF'
+#!/usr/bin/env python3
+import sys
+import os
+import signal
+import subprocess
+import time
+import re
+
+def parse_duration(duration_str):
+    """Parse duration string like '10', '10s', '1m', '1h', '1d' to seconds."""
+    duration_str = duration_str.strip()
+
+    # Match number with optional suffix
+    match = re.match(r'^(\d+(?:\.\d+)?)(s|m|h|d)?$', duration_str)
+    if not match:
+        print(f"timeout: invalid time interval '{duration_str}'", file=sys.stderr)
+        sys.exit(125)
+
+    value = float(match.group(1))
+    suffix = match.group(2) or 's'  # default to seconds
+
+    multipliers = {
+        's': 1,
+        'm': 60,
+        'h': 3600,
+        'd': 86400
+    }
+
+    return value * multipliers[suffix]
+
+def parse_signal(signal_str):
+    """Parse signal name or number to signal number."""
+    signal_str = signal_str.strip().upper()
+
+    # Remove SIG prefix if present
+    if signal_str.startswith('SIG'):
+        signal_str = signal_str[3:]
+
+    # Try to get signal by name
+    try:
+        return getattr(signal, 'SIG' + signal_str)
+    except AttributeError:
+        pass
+
+    # Try as number
+    try:
+        sig_num = int(signal_str)
+        # Validate it's a real signal
+        signal.Signals(sig_num)
+        return sig_num
+    except (ValueError, OSError):
+        print(f"timeout: invalid signal '{signal_str}'", file=sys.stderr)
+        sys.exit(125)
+
+def show_usage():
+    """Show usage information."""
+    usage = """Usage: timeout [OPTION] DURATION COMMAND [ARG]...
+  or:  timeout [OPTION]
+
+Start COMMAND, and kill it if still running after DURATION.
+
+Duration suffixes: 's' for seconds (default), 'm' for minutes,
+                   'h' for hours, 'd' for days.
+
+Options:
+  -s, --signal=SIGNAL    signal to send on timeout (default: TERM)
+  -k, --kill-after=DURATION
+                         if COMMAND is still running after sending the initial
+                         signal, send KILL signal after this duration
+      --preserve-status  exit with the same status as COMMAND, even when the
+                         command times out
+      --foreground       run COMMAND in the foreground (default behavior)
+      --help             display this help and exit
+
+Exit status:
+  124  if COMMAND times out
+  125  if timeout itself fails
+  126  if COMMAND is found but cannot be invoked
+  127  if COMMAND cannot be found
+  137  if COMMAND is sent the KILL signal (128+9)
+  otherwise, the exit status of COMMAND
+"""
+    print(usage)
+    sys.exit(0)
+
+def main():
+    # Parse arguments
+    args = sys.argv[1:]  # First arg is the script name (dash)
+    if not args:
+        show_usage()
+
+    # Skip the dash argument that Python adds
+    if args[0] == '-':
+        args = args[1:]
+
+    if not args:
+        show_usage()
+
+    # Default options
+    term_signal = signal.SIGTERM
+    kill_after = None
+    preserve_status = False
+    foreground = True
+
+    # Parse options
+    i = 0
+    while i < len(args):
+        arg = args[i]
+
+        if arg == '--help':
+            show_usage()
+        elif arg == '--preserve-status':
+            preserve_status = True
+            i += 1
+        elif arg == '--foreground':
+            foreground = True
+            i += 1
+        elif arg.startswith('--signal='):
+            term_signal = parse_signal(arg.split('=', 1)[1])
+            i += 1
+        elif arg == '-s' or arg == '--signal':
+            if i + 1 >= len(args):
+                print("timeout: option requires an argument -- 's'", file=sys.stderr)
+                sys.exit(125)
+            term_signal = parse_signal(args[i + 1])
+            i += 2
+        elif arg.startswith('--kill-after='):
+            kill_after = parse_duration(arg.split('=', 1)[1])
+            i += 1
+        elif arg == '-k' or arg == '--kill-after':
+            if i + 1 >= len(args):
+                print("timeout: option requires an argument -- 'k'", file=sys.stderr)
+                sys.exit(125)
+            kill_after = parse_duration(args[i + 1])
+            i += 2
+        elif arg.startswith('-') and arg != '-':
+            print(f"timeout: invalid option -- '{arg}'", file=sys.stderr)
+            print("Try 'timeout --help' for more information.", file=sys.stderr)
+            sys.exit(125)
+        else:
+            # Found duration
+            break
+
+    # Must have at least duration and command
+    if i >= len(args):
+        print("timeout: missing operand", file=sys.stderr)
+        print("Try 'timeout --help' for more information.", file=sys.stderr)
+        sys.exit(125)
+
+    # Parse duration
+    duration = parse_duration(args[i])
+    i += 1
+
+    # Get command and its arguments
+    if i >= len(args):
+        print("timeout: missing operand after duration", file=sys.stderr)
+        print("Try 'timeout --help' for more information.", file=sys.stderr)
+        sys.exit(125)
+
+    command = args[i:]
+
+    # Start the process
+    try:
+        process = subprocess.Popen(
+            command,
+            preexec_fn=os.setsid if not foreground else None
+        )
+    except FileNotFoundError:
+        print(f"timeout: failed to run command '{command[0]}': No such file or directory", file=sys.stderr)
+        sys.exit(127)
+    except PermissionError:
+        print(f"timeout: failed to run command '{command[0]}': Permission denied", file=sys.stderr)
+        sys.exit(126)
+    except Exception as e:
+        print(f"timeout: failed to run command '{command[0]}': {e}", file=sys.stderr)
+        sys.exit(125)
+
+    # Wait for process with timeout
+    timed_out = False
+    killed = False
+    start_time = time.time()
+
+    try:
+        returncode = process.wait(timeout=duration)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+
+        # Send termination signal
+        try:
+            if foreground:
+                process.send_signal(term_signal)
+            else:
+                os.killpg(os.getpgid(process.pid), term_signal)
+        except ProcessLookupError:
+            pass  # Process already terminated
+
+        # Wait for kill_after duration if specified
+        if kill_after is not None:
+            try:
+                returncode = process.wait(timeout=kill_after)
+            except subprocess.TimeoutExpired:
+                # Send KILL signal
+                killed = True
+                try:
+                    if foreground:
+                        process.send_signal(signal.SIGKILL)
+                    else:
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
+                # Wait for process to die
+                returncode = process.wait()
+        else:
+            # Wait indefinitely after sending signal
+            returncode = process.wait()
+
+    # Determine exit code
+    if timed_out:
+        if preserve_status:
+            sys.exit(returncode if returncode is not None else 124)
+        elif killed:
+            sys.exit(137)  # 128 + SIGKILL (9)
+        else:
+            sys.exit(124)
+    else:
+        sys.exit(returncode)
+
+if __name__ == '__main__':
+    main()
+PYTHON_EOF
