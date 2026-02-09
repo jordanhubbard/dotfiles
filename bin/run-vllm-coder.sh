@@ -18,7 +18,6 @@ case "${MODEL_SIZE}" in
     nvcr.io/nvidia/vllm:25.12.post1-py3 \
     vllm serve Qwen/Qwen2.5-Coder-32B-Instruct \
       --trust-remote-code \
-      --max-model-len 65536 \
       --tensor-parallel-size $(nvidia-smi -L | wc -l) \
     2>&1 | tee run-vllm-coder.out
 	;;
