@@ -30,23 +30,23 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 info() {
-    [[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[INFO]${NC} $*" >&2
+	[[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[INFO]${NC} $*" >&2
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $*" >&2
+	echo -e "${YELLOW}[WARN]${NC} $*" >&2
 }
 
 error() {
-    echo -e "${RED}[ERROR]${NC} $*" >&2
+	echo -e "${RED}[ERROR]${NC} $*" >&2
 }
 
 success() {
-    [[ $VERBOSE -eq 1 ]] && echo -e "${GREEN}[OK]${NC} $*" >&2
+	[[ $VERBOSE -eq 1 ]] && echo -e "${GREEN}[OK]${NC} $*" >&2
 }
 
 usage() {
-    cat << EOF
+	cat <<EOF
 Usage: $(basename "$0") [-d] [-v] [-h] from-str to-str file [file ...]
 
 Change symlink targets using string substitution.
@@ -67,33 +67,33 @@ Examples:
   $(basename "$0") -v old-path new-path link1 link2 link3
 
 EOF
-    exit "${1:-0}"
+	exit "${1:-0}"
 }
 
 # Parse options
 while getopts "dvh" opt; do
-    case "$opt" in
-        d)
-            DRY_RUN=1
-            info "Dry run mode enabled"
-            ;;
-        v)
-            VERBOSE=1
-            ;;
-        h)
-            usage 0
-            ;;
-        *)
-            usage 1
-            ;;
-    esac
+	case "$opt" in
+	d)
+		DRY_RUN=1
+		info "Dry run mode enabled"
+		;;
+	v)
+		VERBOSE=1
+		;;
+	h)
+		usage 0
+		;;
+	*)
+		usage 1
+		;;
+	esac
 done
 shift $((OPTIND - 1))
 
 # Validate arguments
 if [[ $# -lt 3 ]]; then
-    error "Insufficient arguments"
-    usage 1
+	error "Insufficient arguments"
+	usage 1
 fi
 
 from="$1"
@@ -102,13 +102,13 @@ shift 2
 
 # Validate from/to strings
 if [[ -z "$from" ]]; then
-    error "from-str cannot be empty"
-    exit 1
+	error "from-str cannot be empty"
+	exit 1
 fi
 
 if [[ -z "$to" ]]; then
-    error "to-str cannot be empty"
-    exit 1
+	error "to-str cannot be empty"
+	exit 1
 fi
 
 # Statistics
@@ -122,57 +122,57 @@ info "Replacing '$from' with '$to' in symlink targets"
 
 # Process each file
 for file in "$@"; do
-    ((total++))
-    
-    # Check if file exists
-    if [[ ! -e "$file" && ! -L "$file" ]]; then
-        warn "File does not exist: $file"
-        ((skipped++))
-        continue
-    fi
-    
-    # Check if it's a symlink
-    if [[ ! -L "$file" ]]; then
-        info "Not a symlink, skipping: $file"
-        ((skipped++))
-        continue
-    fi
-    
-    # Read the current target
-    if ! current_target=$(readlink "$file"); then
-        error "Failed to read symlink: $file"
-        ((errors++))
-        continue
-    fi
-    
-    # Check if target contains the search string
-    if [[ "$current_target" != *"$from"* ]]; then
-        info "Target doesn't contain '$from', skipping: $file"
-        ((skipped++))
-        continue
-    fi
-    
-    # Create new target by replacing the string
-    new_target="${current_target//"$from"/"$to"}"
-    
-    # Show what we're doing
-    if [[ $DRY_RUN -eq 1 ]]; then
-        echo "$file"
-        echo "  Current: $current_target"
-        echo "  New:     $new_target"
-    else
-        info "Updating: $file"
-        info "  $current_target → $new_target"
-        
-        # Remove old symlink and create new one
-        if rm -f "$file" && ln -s "$new_target" "$file"; then
-            success "Updated: $file"
-            ((changed++))
-        else
-            error "Failed to update: $file"
-            ((errors++))
-        fi
-    fi
+	((total++))
+
+	# Check if file exists
+	if [[ ! -e "$file" && ! -L "$file" ]]; then
+		warn "File does not exist: $file"
+		((skipped++))
+		continue
+	fi
+
+	# Check if it's a symlink
+	if [[ ! -L "$file" ]]; then
+		info "Not a symlink, skipping: $file"
+		((skipped++))
+		continue
+	fi
+
+	# Read the current target
+	if ! current_target=$(readlink "$file"); then
+		error "Failed to read symlink: $file"
+		((errors++))
+		continue
+	fi
+
+	# Check if target contains the search string
+	if [[ "$current_target" != *"$from"* ]]; then
+		info "Target doesn't contain '$from', skipping: $file"
+		((skipped++))
+		continue
+	fi
+
+	# Create new target by replacing the string
+	new_target="${current_target//"$from"/"$to"}"
+
+	# Show what we're doing
+	if [[ $DRY_RUN -eq 1 ]]; then
+		echo "$file"
+		echo "  Current: $current_target"
+		echo "  New:     $new_target"
+	else
+		info "Updating: $file"
+		info "  $current_target → $new_target"
+
+		# Remove old symlink and create new one
+		if rm -f "$file" && ln -s "$new_target" "$file"; then
+			success "Updated: $file"
+			((changed++))
+		else
+			error "Failed to update: $file"
+			((errors++))
+		fi
+	fi
 done
 
 # Print summary

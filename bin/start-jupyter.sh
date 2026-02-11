@@ -25,28 +25,28 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 info() {
-    echo -e "${BLUE}[INFO]${NC} $*"
+	echo -e "${BLUE}[INFO]${NC} $*"
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $*"
+	echo -e "${YELLOW}[WARN]${NC} $*"
 }
 
 error() {
-    echo -e "${RED}[ERROR]${NC} $*" >&2
+	echo -e "${RED}[ERROR]${NC} $*" >&2
 }
 
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $*"
+	echo -e "${GREEN}[SUCCESS]${NC} $*"
 }
 
 die() {
-    error "$*"
-    exit 1
+	error "$*"
+	exit 1
 }
 
 usage() {
-    cat << 'EOF'
+	cat <<'EOF'
 Usage: start-jupyter.sh [-d] [-r] [-c container] [-p port] [-n dir] [-h]
 
 Start Jupyter Notebook server (bare-metal or containerized).
@@ -73,7 +73,7 @@ Notes:
   - Binds to 0.0.0.0 for network access
 
 EOF
-    exit "${1:-0}"
+	exit "${1:-0}"
 }
 
 # Default values
@@ -85,44 +85,44 @@ NOTEBOOKS_DIR="${HOME}/Src/Notebooks"
 
 # Parse options
 while getopts "drc:p:n:h" opt; do
-    case "$opt" in
-        d)
-            USE_DOCKER=1
-            ;;
-        r)
-            ALLOW_ROOT=1
-            ;;
-        c)
-            CONTAINER="$OPTARG"
-            ;;
-        p)
-            PORT="$OPTARG"
-            if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [[ "$PORT" -lt 1 ]] || [[ "$PORT" -gt 65535 ]]; then
-                die "Invalid port number: $PORT"
-            fi
-            ;;
-        n)
-            NOTEBOOKS_DIR="$OPTARG"
-            ;;
-        h)
-            usage 0
-            ;;
-        *)
-            usage 1
-            ;;
-    esac
+	case "$opt" in
+	d)
+		USE_DOCKER=1
+		;;
+	r)
+		ALLOW_ROOT=1
+		;;
+	c)
+		CONTAINER="$OPTARG"
+		;;
+	p)
+		PORT="$OPTARG"
+		if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [[ "$PORT" -lt 1 ]] || [[ "$PORT" -gt 65535 ]]; then
+			die "Invalid port number: $PORT"
+		fi
+		;;
+	n)
+		NOTEBOOKS_DIR="$OPTARG"
+		;;
+	h)
+		usage 0
+		;;
+	*)
+		usage 1
+		;;
+	esac
 done
 
 # Check for allow-root outside Docker mode
 if [[ $ALLOW_ROOT -eq 1 && $USE_DOCKER -eq 0 ]]; then
-    die "The -r flag only applies to Docker mode (-d)"
+	die "The -r flag only applies to Docker mode (-d)"
 fi
 
 # Fallback to home directory if notebooks dir doesn't exist
 if [[ ! -d "$NOTEBOOKS_DIR" ]]; then
-    warn "Notebooks directory not found: $NOTEBOOKS_DIR"
-    NOTEBOOKS_DIR="$HOME"
-    info "Using home directory instead: $NOTEBOOKS_DIR"
+	warn "Notebooks directory not found: $NOTEBOOKS_DIR"
+	NOTEBOOKS_DIR="$HOME"
+	info "Using home directory instead: $NOTEBOOKS_DIR"
 fi
 
 # Expand path
@@ -143,68 +143,68 @@ export CUDA_CACHE_MAXSIZE=2147483648
 JUPYTER_CMD="jupyter notebook --no-browser --ip=0.0.0.0 --port=${PORT}"
 
 if [[ $USE_DOCKER -eq 1 ]]; then
-    # Docker mode
-    
-    # Check for Docker
-    if ! command -v docker &> /dev/null; then
-        die "Docker not found. Install from: https://www.docker.com/products/docker-desktop"
-    fi
-    
-    # Check if Docker daemon is running
-    if ! docker info &> /dev/null; then
-        die "Docker daemon is not running"
-    fi
-    
-    # Check for nvidia-docker support
-    if ! docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi &> /dev/null; then
-        warn "GPU support test failed - continuing anyway, but GPU may not be available"
-    fi
-    
-    # Set up user parameters
-    USER_PARAM=()
-    ROOT_FLAG=""
-    
-    if [[ $ALLOW_ROOT -eq 1 ]]; then
-        warn "Running as root inside container"
-        ROOT_FLAG="--allow-root"
-    else
-        USER_PARAM=("-u" "$(id -u):$(id -g)")
-        info "Running as user $(id -u):$(id -g) inside container"
-    fi
-    
-    info "Starting Jupyter in Docker container..."
-    info "Container will mount: $NOTEBOOKS_DIR -> /workspace/Notebooks"
-    warn "Press Ctrl+C to stop the server"
-    echo ""
-    
-    # Run Docker container
-    docker run --rm \
-        --gpus all \
-        "${USER_PARAM[@]}" \
-        -v "${NOTEBOOKS_DIR}:/workspace/Notebooks" \
-        -it \
-        -p "${PORT}:${PORT}" \
-        --shm-size=1g \
-        --ulimit memlock=-1 \
-        --ulimit stack=67108864 \
-        "$CONTAINER" \
-        $JUPYTER_CMD $ROOT_FLAG
-        
+	# Docker mode
+
+	# Check for Docker
+	if ! command -v docker &>/dev/null; then
+		die "Docker not found. Install from: https://www.docker.com/products/docker-desktop"
+	fi
+
+	# Check if Docker daemon is running
+	if ! docker info &>/dev/null; then
+		die "Docker daemon is not running"
+	fi
+
+	# Check for nvidia-docker support
+	if ! docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi &>/dev/null; then
+		warn "GPU support test failed - continuing anyway, but GPU may not be available"
+	fi
+
+	# Set up user parameters
+	USER_PARAM=()
+	ROOT_FLAG=""
+
+	if [[ $ALLOW_ROOT -eq 1 ]]; then
+		warn "Running as root inside container"
+		ROOT_FLAG="--allow-root"
+	else
+		USER_PARAM=("-u" "$(id -u):$(id -g)")
+		info "Running as user $(id -u):$(id -g) inside container"
+	fi
+
+	info "Starting Jupyter in Docker container..."
+	info "Container will mount: $NOTEBOOKS_DIR -> /workspace/Notebooks"
+	warn "Press Ctrl+C to stop the server"
+	echo ""
+
+	# Run Docker container
+	docker run --rm \
+		--gpus all \
+		"${USER_PARAM[@]}" \
+		-v "${NOTEBOOKS_DIR}:/workspace/Notebooks" \
+		-it \
+		-p "${PORT}:${PORT}" \
+		--shm-size=1g \
+		--ulimit memlock=-1 \
+		--ulimit stack=67108864 \
+		"$CONTAINER" \
+		$JUPYTER_CMD $ROOT_FLAG
+
 else
-    # Bare-metal mode
-    
-    # Check for jupyter
-    if ! command -v jupyter &> /dev/null; then
-        die "Jupyter not found. Install with: pip install jupyter"
-    fi
-    
-    info "Starting Jupyter on bare metal..."
-    warn "Press Ctrl+C to stop the server"
-    echo ""
-    
-    # Change to notebooks directory and run
-    cd "$NOTEBOOKS_DIR" || die "Cannot access directory: $NOTEBOOKS_DIR"
-    
-    # Run Jupyter
-    $JUPYTER_CMD
+	# Bare-metal mode
+
+	# Check for jupyter
+	if ! command -v jupyter &>/dev/null; then
+		die "Jupyter not found. Install with: pip install jupyter"
+	fi
+
+	info "Starting Jupyter on bare metal..."
+	warn "Press Ctrl+C to stop the server"
+	echo ""
+
+	# Change to notebooks directory and run
+	cd "$NOTEBOOKS_DIR" || die "Cannot access directory: $NOTEBOOKS_DIR"
+
+	# Run Jupyter
+	$JUPYTER_CMD
 fi

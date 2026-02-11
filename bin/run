@@ -25,24 +25,24 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 info() {
-    echo -e "${BLUE}[INFO]${NC} $*" >&2
+	echo -e "${BLUE}[INFO]${NC} $*" >&2
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $*" >&2
+	echo -e "${YELLOW}[WARN]${NC} $*" >&2
 }
 
 error() {
-    echo -e "${RED}[ERROR]${NC} $*" >&2
+	echo -e "${RED}[ERROR]${NC} $*" >&2
 }
 
 die() {
-    error "$*"
-    exit 1
+	error "$*"
+	exit 1
 }
 
 usage() {
-    cat << EOF
+	cat <<EOF
 Usage: $(basename "$0") <command> [args...]
 
 Execute a command inside a Docker development container.
@@ -71,12 +71,12 @@ Notes:
   - Container runs as your user (not root) for proper permissions
 
 EOF
-    exit "${1:-0}"
+	exit "${1:-0}"
 }
 
 # Handle help flag
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
-    usage 0
+	usage 0
 fi
 
 # Get script directory
@@ -93,13 +93,13 @@ info "Container: ${CONTAINER_NAME}"
 info "Command: ${COMMAND}"
 
 # Check for Docker
-if ! command -v docker &> /dev/null; then
-    die "Docker not found. Please install Docker Desktop: https://www.docker.com/products/docker-desktop"
+if ! command -v docker &>/dev/null; then
+	die "Docker not found. Please install Docker Desktop: https://www.docker.com/products/docker-desktop"
 fi
 
 # Check if Docker daemon is running
-if ! docker info &> /dev/null; then
-    die "Docker daemon is not running. Please start Docker Desktop."
+if ! docker info &>/dev/null; then
+	die "Docker daemon is not running. Please start Docker Desktop."
 fi
 
 # Set up SSH agent forwarding (macOS and Linux compatible)
@@ -107,55 +107,55 @@ SSHPARAM=()
 
 # macOS Docker Desktop SSH agent socket
 if [[ -e "/run/host-services/ssh-auth.sock" ]]; then
-    SSHPARAM+=(
-        "--volume" "/run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock"
-        "--env" "SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock"
-    )
-    info "SSH agent forwarding enabled (macOS)"
+	SSHPARAM+=(
+		"--volume" "/run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock"
+		"--env" "SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock"
+	)
+	info "SSH agent forwarding enabled (macOS)"
 # Standard SSH_AUTH_SOCK (Linux)
 elif [[ -n "${SSH_AUTH_SOCK:-}" && -e "${SSH_AUTH_SOCK}" ]]; then
-    SSHPARAM+=(
-        "--volume" "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
-        "--env" "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}"
-    )
-    info "SSH agent forwarding enabled (Linux)"
+	SSHPARAM+=(
+		"--volume" "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+		"--env" "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}"
+	)
+	info "SSH agent forwarding enabled (Linux)"
 # Fallback to mounting .ssh directory (read-only)
 elif [[ -d "${HOME}/.ssh" ]]; then
-    SSHPARAM+=(
-        "--volume" "${HOME}/.ssh:/home/${USER}/.ssh:ro"
-    )
-    info "SSH keys mounted (read-only)"
+	SSHPARAM+=(
+		"--volume" "${HOME}/.ssh:/home/${USER}/.ssh:ro"
+	)
+	info "SSH keys mounted (read-only)"
 else
-    warn "No SSH authentication available"
+	warn "No SSH authentication available"
 fi
 
 # Check if container image exists
-if ! docker image inspect "$CONTAINER_NAME" &> /dev/null; then
-    info "Container image not found, building..."
-    
-    # Check for Dockerfile
-    DOCKERFILE="${SCRIPTPATH}/Dockerfile"
-    if [[ ! -f "$DOCKERFILE" ]]; then
-        die "Dockerfile not found at: $DOCKERFILE"
-    fi
-    
-    info "Building container image: ${CONTAINER_NAME}"
-    info "Dockerfile: ${DOCKERFILE}"
-    
-    # Build the container
-    if ! docker build \
-        -t "$CONTAINER_NAME" \
-        -f "$DOCKERFILE" \
-        --build-arg USER_NAME="$USER" \
-        --build-arg USER_ID="$(id -u)" \
-        --build-arg GROUP_ID="$(id -g)" \
-        "${SCRIPTPATH}"; then
-        die "Failed to build container image"
-    fi
-    
-    info "Container image built successfully"
+if ! docker image inspect "$CONTAINER_NAME" &>/dev/null; then
+	info "Container image not found, building..."
+
+	# Check for Dockerfile
+	DOCKERFILE="${SCRIPTPATH}/Dockerfile"
+	if [[ ! -f "$DOCKERFILE" ]]; then
+		die "Dockerfile not found at: $DOCKERFILE"
+	fi
+
+	info "Building container image: ${CONTAINER_NAME}"
+	info "Dockerfile: ${DOCKERFILE}"
+
+	# Build the container
+	if ! docker build \
+		-t "$CONTAINER_NAME" \
+		-f "$DOCKERFILE" \
+		--build-arg USER_NAME="$USER" \
+		--build-arg USER_ID="$(id -u)" \
+		--build-arg GROUP_ID="$(id -g)" \
+		"${SCRIPTPATH}"; then
+		die "Failed to build container image"
+	fi
+
+	info "Container image built successfully"
 else
-    info "Using existing container image"
+	info "Using existing container image"
 fi
 
 # Get current directory for mounting
@@ -166,23 +166,20 @@ info "Starting container..."
 
 # Build docker run command
 DOCKER_CMD=(
-    docker run
-    --rm                          # Remove container after exit
-    -it                           # Interactive with TTY
-    --privileged                  # Access to performance counters
-    "${SSHPARAM[@]}"             # SSH parameters
-    --volume "${CURRENT_DIR}:${CURRENT_DIR}:Z"  # Mount current dir with SELinux label
-    --workdir "${CURRENT_DIR}"   # Set working directory
-    "$CONTAINER_NAME"
-    sh -c "$COMMAND"
+	docker run
+	--rm                                       # Remove container after exit
+	-it                                        # Interactive with TTY
+	--privileged                               # Access to performance counters
+	"${SSHPARAM[@]}"                           # SSH parameters
+	--volume "${CURRENT_DIR}:${CURRENT_DIR}:Z" # Mount current dir with SELinux label
+	--workdir "${CURRENT_DIR}"                 # Set working directory
+	"$CONTAINER_NAME"
+	sh -c "$COMMAND"
 )
 
 # Execute the command
 if ! "${DOCKER_CMD[@]}"; then
-    EXIT_CODE=$?
-    error "Command failed with exit code: $EXIT_CODE"
-    exit $EXIT_CODE
+	EXIT_CODE=$?
+	error "Command failed with exit code: $EXIT_CODE"
+	exit $EXIT_CODE
 fi
-
-
-

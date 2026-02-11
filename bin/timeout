@@ -19,14 +19,14 @@
 # Check if native timeout command exists (common on Linux)
 # We need to check if it's the GNU timeout, not a shell builtin or other timeout
 if command -v timeout >/dev/null 2>&1; then
-    # Check if this is the real timeout command (not this script)
-    TIMEOUT_PATH=$(command -v timeout)
-    # If the path is this script, we need to use the fallback
-    # Otherwise, use the native timeout
-    if [[ "$TIMEOUT_PATH" != "$0" ]] && [[ "$(basename "$TIMEOUT_PATH")" == "timeout" ]]; then
-        # Found a real timeout command, use it
-        exec "$TIMEOUT_PATH" "$@"
-    fi
+	# Check if this is the real timeout command (not this script)
+	TIMEOUT_PATH=$(command -v timeout)
+	# If the path is this script, we need to use the fallback
+	# Otherwise, use the native timeout
+	if [[ "$TIMEOUT_PATH" != "$0" ]] && [[ "$(basename "$TIMEOUT_PATH")" == "timeout" ]]; then
+		# Found a real timeout command, use it
+		exec "$TIMEOUT_PATH" "$@"
+	fi
 fi
 
 # No native timeout found, use Python implementation

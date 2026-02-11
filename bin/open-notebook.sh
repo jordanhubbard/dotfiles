@@ -23,28 +23,28 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 info() {
-    echo -e "${BLUE}[INFO]${NC} $*"
+	echo -e "${BLUE}[INFO]${NC} $*"
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $*"
+	echo -e "${YELLOW}[WARN]${NC} $*"
 }
 
 error() {
-    echo -e "${RED}[ERROR]${NC} $*" >&2
+	echo -e "${RED}[ERROR]${NC} $*" >&2
 }
 
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $*"
+	echo -e "${GREEN}[SUCCESS]${NC} $*"
 }
 
 die() {
-    error "$*"
-    exit 1
+	error "$*"
+	exit 1
 }
 
 usage() {
-    cat << EOF
+	cat <<EOF
 Usage: $(basename "$0") [-H host] [-u user] [-d dir] [-h]
 
 Start a remote Jupyter notebook server and open it in your browser.
@@ -61,16 +61,16 @@ Examples:
   $(basename "$0") -u myuser -d Projects     # Custom user and directory
 
 EOF
-    exit "${1:-0}"
+	exit "${1:-0}"
 }
 
 # Cleanup function
 cleanup() {
-    local exit_code=$?
-    if [[ -n "${TEMP_FILE:-}" && -f "$TEMP_FILE" ]]; then
-        rm -f "$TEMP_FILE"
-    fi
-    exit $exit_code
+	local exit_code=$?
+	if [[ -n "${TEMP_FILE:-}" && -f "$TEMP_FILE" ]]; then
+		rm -f "$TEMP_FILE"
+	fi
+	exit $exit_code
 }
 
 trap cleanup EXIT INT TERM
@@ -82,32 +82,32 @@ REMOTE_DIR="Src/Notebooks"
 
 # Parse options
 while getopts "H:u:d:h" opt; do
-    case "$opt" in
-        H)
-            HOST="$OPTARG"
-            ;;
-        u)
-            USER="$OPTARG"
-            ;;
-        d)
-            REMOTE_DIR="$OPTARG"
-            ;;
-        h)
-            usage 0
-            ;;
-        *)
-            usage 1
-            ;;
-    esac
+	case "$opt" in
+	H)
+		HOST="$OPTARG"
+		;;
+	u)
+		USER="$OPTARG"
+		;;
+	d)
+		REMOTE_DIR="$OPTARG"
+		;;
+	h)
+		usage 0
+		;;
+	*)
+		usage 1
+		;;
+	esac
 done
 
 # Validate prerequisites
-if ! command -v ssh &> /dev/null; then
-    die "ssh command not found"
+if ! command -v ssh &>/dev/null; then
+	die "ssh command not found"
 fi
 
-if ! command -v open &> /dev/null; then
-    die "open command not found (are you on macOS?)"
+if ! command -v open &>/dev/null; then
+	die "open command not found (are you on macOS?)"
 fi
 
 # Create temporary file for capturing output
@@ -123,39 +123,39 @@ echo ""
 # Test SSH connection first
 info "Testing SSH connection..."
 if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "${USER}@${HOST}" true 2>/dev/null; then
-    warn "SSH key authentication may not be set up"
-    info "You may need to enter your password..."
+	warn "SSH key authentication may not be set up"
+	info "You may need to enter your password..."
 fi
 
 # Function to extract and open URL
 open_notebook_url() {
-    local temp_file="$1"
-    local max_attempts=30
-    local attempt=0
-    
-    info "Waiting for Jupyter server to start..."
-    
-    while [[ $attempt -lt $max_attempts ]]; do
-        if [[ -f "$temp_file" ]]; then
-            # Look for Jupyter notebook URL
-            local url
-            url=$(grep -E '^\s+http://(127\.0\.0\.1|localhost|0\.0\.0\.0):' "$temp_file" | head -n1 | awk '{print $1}')
-            
-            if [[ -n "$url" ]]; then
-                success "Found Jupyter URL: $url"
-                info "Opening in browser..."
-                open "$url"
-                return 0
-            fi
-        fi
-        
-        sleep 1
-        ((attempt++))
-    done
-    
-    warn "Could not detect Jupyter URL after ${max_attempts} seconds"
-    warn "Check ${temp_file} for the URL and open manually"
-    return 1
+	local temp_file="$1"
+	local max_attempts=30
+	local attempt=0
+
+	info "Waiting for Jupyter server to start..."
+
+	while [[ $attempt -lt $max_attempts ]]; do
+		if [[ -f "$temp_file" ]]; then
+			# Look for Jupyter notebook URL
+			local url
+			url=$(grep -E '^\s+http://(127\.0\.0\.1|localhost|0\.0\.0\.0):' "$temp_file" | head -n1 | awk '{print $1}')
+
+			if [[ -n "$url" ]]; then
+				success "Found Jupyter URL: $url"
+				info "Opening in browser..."
+				open "$url"
+				return 0
+			fi
+		fi
+
+		sleep 1
+		((attempt++))
+	done
+
+	warn "Could not detect Jupyter URL after ${max_attempts} seconds"
+	warn "Check ${temp_file} for the URL and open manually"
+	return 1
 }
 
 # Start the URL opener in background
@@ -173,17 +173,17 @@ echo ""
 
 # Run the SSH command and tee output
 if ssh "${USER}@${HOST}" "$JUPYTER_CMD" 2>&1 | tee "$TEMP_FILE"; then
-    success "Session ended normally"
+	success "Session ended normally"
 else
-    EXIT_CODE=$?
-    if [[ $EXIT_CODE -eq 130 ]]; then
-        info "Interrupted by user"
-    else
-        error "SSH session ended with error code: $EXIT_CODE"
-    fi
+	EXIT_CODE=$?
+	if [[ $EXIT_CODE -eq 130 ]]; then
+		info "Interrupted by user"
+	else
+		error "SSH session ended with error code: $EXIT_CODE"
+	fi
 fi
 
 # Wait for opener process to finish
 if kill -0 $OPENER_PID 2>/dev/null; then
-    wait $OPENER_PID 2>/dev/null || true
+	wait $OPENER_PID 2>/dev/null || true
 fi
