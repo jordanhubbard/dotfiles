@@ -860,6 +860,15 @@ BAISH_MODEL=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
 set-environment-vars
 set-aliases
 
+# pnpm
+for dir in $HOME/Library/pnpm $HOME/.local/share/pnpm; do
+	[ -d $dir ] && export PNPM_HOME=$dir
+done
+case ":$PATH:" in
+	*":$PNPM_HOME:"*) ;;
+  	*) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
 # Set prompt
 [[ "$TERM" == "dumb" ]] || use-fancy-prompt
 
