@@ -736,7 +736,7 @@ use-boring-prompt() {
 
 set-environment-vars() {
     # Basic paths
-    setenv PATH "/sbin:/usr/sbin:/bin:/usr/bin:${HOME}/Bin:${HOME}/.local/bin"
+    setenv PATH "/sbin:/usr/sbin:/bin:/usr/bin:${HOME}/Bin"
     setenv MANPATH "/usr/share/man"
     setenv INFOPATH "/usr/share/info"
     
