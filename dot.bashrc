@@ -746,12 +746,14 @@ set-environment-vars() {
     setenv ELIXIR_EDITOR emacs
     setenv HISTCONTROL "ignoredups:erasedups"
     
-    # Homebrew (macOS)
-    if [[ -d "/opt/homebrew" ]]; then
-        setenv HOMEBREW_PREFIX "/opt/homebrew"
-        setenv HOMEBREW_CELLAR "/opt/homebrew/Cellar"
-        setenv HOMEBREW_REPOSITORY "/opt/homebrew"
-    fi
+    # Homebrew (macOS | Linux)
+    for brew in /opt/homebrew /home/linuxbrew/.linuxbrew; do
+      if [[ -d "${brew}" ]]; then
+	setenv HOMEBREW_PREFIX "${brew}"
+        setenv HOMEBREW_CELLAR "${brew}/Cellar"
+        setenv HOMEBREW_REPOSITORY "${brew}"
+      fi
+    done
     
     # Go
     [[ -z "$GOPATH" ]] && export GOPATH="${HOME}/gocode"
