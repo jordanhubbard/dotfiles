@@ -768,6 +768,7 @@ set-environment-vars() {
         "${HOME}/.cabal"
         "${HOME}/.ghcup"
         "${HOME}/.cargo"
+	"/Applications/Docker.app/Contents/Resources"
         "/opt/local"
         "/snap"
         "/opt/X11"
