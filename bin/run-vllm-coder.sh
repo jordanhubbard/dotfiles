@@ -9,37 +9,38 @@ fi
 echo "Using model size of ${MODEL_SIZE}"
 
 case "${MODEL_SIZE}" in
-# small: 15b - fits on a single DGX Spark or mid-range GPU gaming card.
+# small: 30B MoE (3B active) FP8 - fits on RTX 5090 (32GB) or DGX Spark
 small)
 	docker run -it --gpus all -p 8000:8000 \
 		--ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
 		-v ~/.cache/huggingface:/root/.cache/huggingface \
 		nvcr.io/nvidia/vllm:25.12.post1-py3 \
-		vllm serve bigcode/starcoder2-15b --trust-remote-code \
+		vllm serve Qwen/Qwen3-Coder-30B-A3B-Instruct-FP8 \
+		--trust-remote-code \
+		--tensor-parallel-size $(nvidia-smi -L | wc -l) \
 		2>&1 | tee run-vllm-coder.out
 	;;
 
-# medium: 32B dense - needs 1x 80GB GPU (A100/H100) or 2x 48GB (A6000, L40S)
+# medium: 123B dense FP8 - needs ~3x 48GB (A6000/L40S) or 2x 80GB (A100/H100)
+# for 2x 48GB use mistralai/Devstral-2-123B-Instruct-2512-AWQ (4-bit) instead
 medium)
 	docker run -it --gpus all -p 8000:8000 \
 		--ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
 		-v ~/.cache/huggingface:/root/.cache/huggingface \
 		nvcr.io/nvidia/vllm:25.12.post1-py3 \
-		vllm serve Qwen/Qwen2.5-Coder-32B-Instruct \
-		--trust-remote-code --tensor-parallel-size $(nvidia-smi -L | wc -l) \
+		vllm serve mistralai/Devstral-2-123B-Instruct-2512 \
+		--tensor-parallel-size $(nvidia-smi -L | wc -l) \
 		2>&1 | tee run-vllm-coder.out
 	;;
 
-# large: 480B MoE (35B active) FP8 - needs 8x H100/H200/H20 (80GB+ each)
+# large: 230B MoE (10B active) FP8 - needs 4x H100/H200/H20 (80GB+) minimum
 large)
 	docker run -it --gpus all -p 8000:8000 \
 		--ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
 		-v ~/.cache/huggingface:/root/.cache/huggingface \
 		nvcr.io/nvidia/vllm:25.12.post1-py3 \
-		vllm serve Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8 \
-		--trust-remote-code \
-		--max-model-len 131072 \
-		--enable-expert-parallel \
+		vllm serve MiniMaxAI/MiniMax-M2.5 \
+		--tool-call-parser minimax_m2 \
 		--tensor-parallel-size $(nvidia-smi -L | wc -l) \
 		2>&1 | tee run-vllm-coder.out
 	;;
