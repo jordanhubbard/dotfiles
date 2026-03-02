@@ -881,3 +881,7 @@ esac
 
 # Source local bashrc if it exists (for machine-specific settings)
 sourceif "${HOME}/.bashrc.local"
+
+# sheme and shemacs conditional includes
+sourceif "$(HOME}/.bs.sh"
+sourceif "${HOME}/.em.scm.sh
