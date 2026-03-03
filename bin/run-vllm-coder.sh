@@ -27,7 +27,7 @@ COMMON_VLLM_ARGS="
 case "${MODEL_SIZE}" in
 small)
   docker run ${COMMON_DOCKER_ARGS} nvcr.io/nvidia/vllm:25.12.post1-py3 \
-    vllm serve Qwen/Qwen2.5-Coder-7B-Instruct \
+    vllm serve Qwen/Qwen2.5-Coder-7B-Instruct-AWQ \
       --quantization awq \
       ${COMMON_VLLM_ARGS} \
     2>&1 | tee run-vllm-coder.out
@@ -35,7 +35,7 @@ small)
 
 medium)
   docker run ${COMMON_DOCKER_ARGS} nvcr.io/nvidia/vllm:25.12.post1-py3 \
-    vllm serve Qwen/Qwen2.5-Coder-14B-Instruct \
+    vllm serve Qwen/Qwen2.5-Coder-14B-Instruct-AWQ \
       --quantization awq \
       ${COMMON_VLLM_ARGS} \
     2>&1 | tee run-vllm-coder.out
