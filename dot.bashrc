@@ -885,4 +885,4 @@ sourceif "${HOME}/.bashrc.local"
 # sheme install marker
 sourceif "$(HOME}/.bs.sh"
 # shemacs install marker
-sourceif "${HOME}/.em.scm.sh
+sourceif "${HOME}/.em.scm.sh"
