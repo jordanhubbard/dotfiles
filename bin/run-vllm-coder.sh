@@ -15,9 +15,15 @@ small)
 		--ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
 		-v ~/.cache/huggingface:/root/.cache/huggingface \
 		nvcr.io/nvidia/vllm:25.12.post1-py3 \
-		vllm serve Qwen/Qwen3-Coder-30B-A3B-Instruct-FP8 \
-		--trust-remote-code \
-		--tensor-parallel-size $(nvidia-smi -L | wc -l) \
+		vllm serve Qwen2.5-Coder-7B-Instruct \
+			--dtype auto \
+			--quantization awq \
+			--max-model-len 8192 \
+			--gpu-memory-utilization 0.60 \
+			--max-num-seqs 8 \
+			--max-num-batched-tokens 8192 \
+			--swap-space 1 \
+			--tensor-parallel-size $(nvidia-smi -L | wc -l) \
 		2>&1 | tee run-vllm-coder.out
 	;;
 
@@ -28,8 +34,15 @@ medium)
 		--ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
 		-v ~/.cache/huggingface:/root/.cache/huggingface \
 		nvcr.io/nvidia/vllm:25.12.post1-py3 \
-		vllm serve mistralai/Devstral-2-123B-Instruct-2512 \
-		--tensor-parallel-size $(nvidia-smi -L | wc -l) \
+		vllm serve Qwen2.5-Coder-14B-Instruct \
+			--dtype auto \
+			--quantization awq \
+			--max-model-len 8192 \
+			--gpu-memory-utilization 0.60 \
+			--max-num-seqs 8 \
+			--max-num-batched-tokens 8192 \
+			--swap-space 1 \
+			--tensor-parallel-size $(nvidia-smi -L | wc -l) \
 		2>&1 | tee run-vllm-coder.out
 	;;
 
