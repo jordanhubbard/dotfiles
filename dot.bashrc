@@ -856,11 +856,16 @@ HISTFILESIZE=20000
 HISTCONTROL=ignoredups:erasedups
 
 # AI tool configuration
-BAISH_OPENAI_BASE_URL=http://sparky.local
+BAISH_OPENAI_BASE_URL=http://127.0.0.1
 BAISH_MODEL=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
 
 # Apply settings
-set-environment-vars
+if [[ -f /etc/NIXOS ]]; then                                                  
+      # NixOS manages PATH — just add personal dirs                             
+      [[ -d "${HOME}/Bin" ]] && PATH="${HOME}/Bin:$PATH"
+else                                                                          
+      set-environment-vars                
+fi                                                                            
 set-aliases
 
 # pnpm
