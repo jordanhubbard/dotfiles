@@ -855,10 +855,6 @@ HISTSIZE=10000
 HISTFILESIZE=20000
 HISTCONTROL=ignoredups:erasedups
 
-# AI tool configuration
-BAISH_OPENAI_BASE_URL=http://127.0.0.1
-BAISH_MODEL=NVIDIA-Nemotron-3-Nano-30B-A3B-FP8-GGUF
-
 # Apply settings
 if [[ -f /etc/NIXOS ]]; then                                                  
       # NixOS manages PATH — just add personal dirs                             
