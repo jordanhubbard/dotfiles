@@ -127,10 +127,55 @@ info "Projects: $PROJECTS"
 [[ $RESUME -eq 1 ]] && warn "Resume mode: existing build will be continued"
 echo ""
 
-# Check for required tools
+# Detect package manager and install packages
+detect_pkg_manager() {
+	if command -v apt-get &>/dev/null; then echo "apt"
+	elif command -v dnf &>/dev/null; then echo "dnf"
+	elif command -v yum &>/dev/null; then echo "yum"
+	elif command -v pacman &>/dev/null; then echo "pacman"
+	elif command -v zypper &>/dev/null; then echo "zypper"
+	elif command -v brew &>/dev/null; then echo "brew"
+	else echo ""
+	fi
+}
+
+install_pkg() {
+	local pkg_manager="$1"
+	shift
+	local pkgs=("$@")
+	info "Installing: ${pkgs[*]}"
+	case "$pkg_manager" in
+	apt)    sudo apt-get install -y "${pkgs[@]}" ;;
+	dnf)    sudo dnf install -y "${pkgs[@]}" ;;
+	yum)    sudo yum install -y "${pkgs[@]}" ;;
+	pacman) sudo pacman -S --noconfirm "${pkgs[@]}" ;;
+	zypper) sudo zypper install -y "${pkgs[@]}" ;;
+	brew)   brew install "${pkgs[@]}" ;;
+	*)      die "Cannot install ${pkgs[*]}: no supported package manager found" ;;
+	esac
+}
+
+# Map tool names to package names per package manager
+pkg_name_for() {
+	local tool="$1" mgr="$2"
+	case "$tool:$mgr" in
+	g++:apt)    echo "g++" ;;
+	g++:dnf|g++:yum|g++:zypper) echo "gcc-c++" ;;
+	g++:pacman) echo "gcc" ;;
+	g++:brew)   echo "gcc" ;;
+	*)          echo "$tool" ;;  # cmake, make, git: same name everywhere
+	esac
+}
+
+PKG_MANAGER=$(detect_pkg_manager)
+
+# Check for required tools, install if missing
 for tool in git cmake make; do
 	if ! command -v "$tool" &>/dev/null; then
-		die "Required tool not found: $tool"
+		warn "Required tool not found: $tool"
+		[[ -z "$PKG_MANAGER" ]] && die "No package manager found; please install $tool manually"
+		install_pkg "$PKG_MANAGER" "$(pkg_name_for "$tool" "$PKG_MANAGER")" || die "Failed to install $tool"
+		command -v "$tool" &>/dev/null || die "$tool still not found after install attempt"
 	fi
 done
 
@@ -192,7 +237,7 @@ fi
 
 cd "$BUILD_DIR" || die "Cannot access build directory"
 
-# Configure compiler
+# Configure compiler — install g++ if nothing is available
 if command -v clang &>/dev/null; then
 	export CC=clang
 	export CXX=clang++
@@ -202,7 +247,13 @@ elif command -v gcc &>/dev/null; then
 	export CXX=g++
 	info "Using gcc compiler"
 else
-	die "No suitable C/C++ compiler found"
+	warn "No C/C++ compiler found"
+	[[ -z "$PKG_MANAGER" ]] && die "No package manager found; please install g++ manually"
+	install_pkg "$PKG_MANAGER" "$(pkg_name_for "g++" "$PKG_MANAGER")" || die "Failed to install g++"
+	command -v gcc &>/dev/null || die "gcc still not found after install attempt"
+	export CC=gcc
+	export CXX=g++
+	info "Using gcc compiler (freshly installed)"
 fi
 
 # Run CMake configuration
