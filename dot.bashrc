@@ -828,10 +828,7 @@ set-aliases() {
     # Bash rehash
     alias rehash='hash -r'
     
-    # Grep with color
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
+    alias codex='codex --full-auto --sandbox danger-full-access'
 }
 
 # ============================================================================
