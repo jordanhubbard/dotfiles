@@ -827,8 +827,6 @@ set-aliases() {
     
     # Bash rehash
     alias rehash='hash -r'
-    
-    alias codex='codex --full-auto --sandbox danger-full-access'
 }
 
 # ============================================================================
