@@ -14,7 +14,7 @@ COMMON_DOCKER_ARGS="
 
 # Memory-safety defaults for unified-memory boxes
 COMMON_VLLM_ARGS="
-  --dtype auto
+  --dtype float16
   --gpu-memory-utilization 0.60
   --max-model-len 8192
   --kv-cache-dtype fp8
