@@ -80,6 +80,16 @@ run python script.py              # Run Python script
 
 ### AI & Document Processing
 
+#### run-vllm-coder.sh
+Run a vLLM OpenAI-compatible server for local reasoning models.
+
+```bash
+run-vllm-coder.sh small     # DeepSeek-R1-Distill-Qwen-7B AWQ
+run-vllm-coder.sh medium    # DeepSeek-R1-Distill-Qwen-14B AWQ
+run-vllm-coder.sh large     # DeepSeek-R1-Distill-Qwen-32B AWQ
+run-vllm-coder.sh qwq       # QwQ-32B AWQ alternative
+```
+
 #### summarize-document.py / summarize.sh
 Summarize documents using Ollama LLM.
 
@@ -150,6 +160,7 @@ Some scripts require additional tools:
 - **llvm-bootstrap.sh**: git, cmake, make, clang or gcc
 - **mount-sshfs.sh**: sshfs, macFUSE (macOS)
 - **start-jupyter.sh**: jupyter or docker (with nvidia-docker for GPU)
+- **run-vllm-coder.sh**: docker, nvidia-docker, nvidia-smi
 - **summarize-document.py**: python3, requests, pdfplumber (for PDFs)
 - **wakehost.sh**: wakeonlan or etherwake
 - **worldclock.sh**: Tcl/Tk (wish)
@@ -204,4 +215,3 @@ When modifying scripts, maintain these standards:
 ## License
 
 See [LICENSE.md](../LICENSE.md) in the root directory.
-
