@@ -88,6 +88,7 @@ run-vllm-coder.sh small     # DeepSeek-R1-Distill-Qwen-7B AWQ
 run-vllm-coder.sh medium    # DeepSeek-R1-Distill-Qwen-14B AWQ
 run-vllm-coder.sh large     # DeepSeek-R1-Distill-Qwen-32B AWQ
 run-vllm-coder.sh qwq       # QwQ-32B AWQ alternative
+VLLM_GPU_MEMORY_UTILIZATION=0.80 VLLM_MAX_NUM_SEQS=16 run-vllm-coder.sh medium
 ```
 
 #### summarize-document.py / summarize.sh
