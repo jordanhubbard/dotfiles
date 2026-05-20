@@ -81,7 +81,7 @@ check_prerequisites() {
 # Check if mount point is already mounted
 is_mounted() {
 	local mount_point="$1"
-	if mount | grep -q " on ${mount_point} "; then
+	if mount | grep -Fq " on ${mount_point} "; then
 		return 0
 	fi
 	return 1
@@ -187,17 +187,19 @@ MOUNT_OPTIONS=(
 	"volname=${HOST}"
 )
 
-# Build the sshfs command
-SSHFS_CMD="sshfs ${USER}@${FULL_HOST}:${REMOTE_PATH} ${LOCAL_PATH} -o$(
+REMOTE_SPEC="${USER}@${FULL_HOST}:${REMOTE_PATH}"
+MOUNT_OPTIONS_CSV="$(
 	IFS=,
 	echo "${MOUNT_OPTIONS[*]}"
 )"
+SSHFS_CMD=(sshfs "$REMOTE_SPEC" "$LOCAL_PATH" "-o${MOUNT_OPTIONS_CSV}")
 
 info "Mounting..."
-info "Command: $SSHFS_CMD"
+printf -v SSHFS_CMD_DISPLAY "%q " "${SSHFS_CMD[@]}"
+info "Command: ${SSHFS_CMD_DISPLAY% }"
 
 # Attempt to mount
-if eval "$SSHFS_CMD"; then
+if "${SSHFS_CMD[@]}"; then
 	success "Successfully mounted ${FULL_HOST}:${REMOTE_PATH} at ${LOCAL_PATH}"
 	echo ""
 	info "To unmount, run: umount \"${LOCAL_PATH}\""

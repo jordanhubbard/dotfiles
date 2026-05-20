@@ -103,26 +103,31 @@ add_hashicorp_repo() {
 
 # Install specified tools
 install_tools() {
-	local tools=("$@")
+	local requested=("$@")
+	local tools=()
 
-	if [[ ${#tools[@]} -eq 0 ]]; then
+	if [[ ${#requested[@]} -eq 0 ]]; then
 		info "No tools specified, installing default set: $DEFAULT_TOOLS"
-		read -ra tools <<<"$DEFAULT_TOOLS"
+		read -ra requested <<<"$DEFAULT_TOOLS"
 	fi
 
 	# Validate tool names
-	for tool in "${tools[@]}"; do
+	for tool in "${requested[@]}"; do
 		if [[ ! " $AVAILABLE_TOOLS " =~ " $tool " ]]; then
 			warn "Unknown tool '$tool', skipping. Available: $AVAILABLE_TOOLS"
 			continue
 		fi
+		tools+=("$tool")
 	done
+
+	if [[ ${#tools[@]} -eq 0 ]]; then
+		die "No valid HashiCorp tools selected"
+	fi
 
 	info "Installing HashiCorp tools: ${tools[*]}"
 
 	# Install tools
-	# shellcheck disable=SC2068
-	if ! sudo apt-get install -y ${tools[@]}; then
+	if ! sudo apt-get install -y "${tools[@]}"; then
 		die "Failed to install some or all tools"
 	fi
 

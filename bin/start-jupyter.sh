@@ -140,7 +140,7 @@ echo ""
 export CUDA_CACHE_MAXSIZE=2147483648
 
 # Build Jupyter command
-JUPYTER_CMD="jupyter notebook --no-browser --ip=0.0.0.0 --port=${PORT}"
+JUPYTER_CMD=(jupyter notebook --no-browser --ip=0.0.0.0 "--port=${PORT}")
 
 if [[ $USE_DOCKER -eq 1 ]]; then
 	# Docker mode
@@ -162,11 +162,11 @@ if [[ $USE_DOCKER -eq 1 ]]; then
 
 	# Set up user parameters
 	USER_PARAM=()
-	ROOT_FLAG=""
+	ROOT_ARGS=()
 
 	if [[ $ALLOW_ROOT -eq 1 ]]; then
 		warn "Running as root inside container"
-		ROOT_FLAG="--allow-root"
+		ROOT_ARGS=(--allow-root)
 	else
 		USER_PARAM=("-u" "$(id -u):$(id -g)")
 		info "Running as user $(id -u):$(id -g) inside container"
@@ -188,7 +188,7 @@ if [[ $USE_DOCKER -eq 1 ]]; then
 		--ulimit memlock=-1 \
 		--ulimit stack=67108864 \
 		"$CONTAINER" \
-		$JUPYTER_CMD $ROOT_FLAG
+		"${JUPYTER_CMD[@]}" "${ROOT_ARGS[@]}"
 
 else
 	# Bare-metal mode
@@ -206,5 +206,5 @@ else
 	cd "$NOTEBOOKS_DIR" || die "Cannot access directory: $NOTEBOOKS_DIR"
 
 	# Run Jupyter
-	$JUPYTER_CMD
+	"${JUPYTER_CMD[@]}"
 fi

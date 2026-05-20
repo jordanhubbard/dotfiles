@@ -181,10 +181,13 @@ done
 
 # Create parent directory if needed
 PARENT_DIR=$(dirname "$LLVM_PROJ")
+LLVM_PROJ_BASENAME=$(basename "$LLVM_PROJ")
 if [[ ! -d "$PARENT_DIR" ]]; then
 	info "Creating parent directory: $PARENT_DIR"
 	mkdir -p "$PARENT_DIR" || die "Failed to create directory: $PARENT_DIR"
 fi
+PARENT_DIR=$(cd "$PARENT_DIR" && pwd)
+LLVM_PROJ="${PARENT_DIR}/${LLVM_PROJ_BASENAME}"
 
 # Clone or update repository
 if [[ ! -d "$LLVM_PROJ" ]]; then
@@ -194,17 +197,16 @@ if [[ ! -d "$LLVM_PROJ" ]]; then
 		info "Found llvm-project in current directory"
 	else
 		info "Cloning LLVM project repository..."
-		cd "$PARENT_DIR" || die "Cannot change to directory: $PARENT_DIR"
 
-		CLONE_CMD="git clone --depth=1"
-		[[ -n "$BRANCH" ]] && CLONE_CMD="$CLONE_CMD -b $BRANCH"
-		CLONE_CMD="$CLONE_CMD https://github.com/llvm/llvm-project.git"
+		CLONE_CMD=(git clone --depth=1)
+		[[ -n "$BRANCH" ]] && CLONE_CMD+=(-b "$BRANCH")
+		CLONE_CMD+=(https://github.com/llvm/llvm-project.git "$LLVM_PROJ")
 
-		info "Running: $CLONE_CMD"
-		if ! $CLONE_CMD; then
+		printf -v CLONE_CMD_DISPLAY "%q " "${CLONE_CMD[@]}"
+		info "Running: ${CLONE_CMD_DISPLAY% }"
+		if ! "${CLONE_CMD[@]}"; then
 			die "Failed to clone LLVM project"
 		fi
-		LLVM_PROJ="$PARENT_DIR/llvm-project"
 	fi
 else
 	info "Using existing LLVM project at: $LLVM_PROJ"

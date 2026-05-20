@@ -100,6 +100,7 @@ while getopts "H:u:d:h" opt; do
 		;;
 	esac
 done
+shift $((OPTIND - 1))
 
 # Validate prerequisites
 if ! command -v ssh &>/dev/null; then
@@ -139,18 +140,23 @@ open_notebook_url() {
 		if [[ -f "$temp_file" ]]; then
 			# Look for Jupyter notebook URL
 			local url
-			url=$(grep -E '^\s+http://(127\.0\.0\.1|localhost|0\.0\.0\.0):' "$temp_file" | head -n1 | awk '{print $1}')
+			url=$(awk '/^[[:space:]]+http:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0):/ {print $1; exit}' "$temp_file")
 
 			if [[ -n "$url" ]]; then
+				local browser_url="$url"
+				browser_url="${browser_url/#http:\/\/127.0.0.1:/http://${HOST}:}"
+				browser_url="${browser_url/#http:\/\/localhost:/http://${HOST}:}"
+				browser_url="${browser_url/#http:\/\/0.0.0.0:/http://${HOST}:}"
+
 				success "Found Jupyter URL: $url"
 				info "Opening in browser..."
-				open "$url"
+				open "$browser_url"
 				return 0
 			fi
 		fi
 
 		sleep 1
-		((attempt++))
+		((attempt += 1))
 	done
 
 	warn "Could not detect Jupyter URL after ${max_attempts} seconds"
@@ -158,12 +164,19 @@ open_notebook_url() {
 	return 1
 }
 
+quote_for_remote_shell() {
+	local value="$1"
+	value=${value//\'/\'\\\'\'}
+	printf "'%s'" "$value"
+}
+
 # Start the URL opener in background
 (open_notebook_url "$TEMP_FILE") &
 OPENER_PID=$!
 
 # SSH command to start Jupyter
-JUPYTER_CMD="cd ${REMOTE_DIR} 2>/dev/null || cd ~ && jupyter notebook --no-browser --ip=0.0.0.0"
+REMOTE_DIR_QUOTED=$(quote_for_remote_shell "$REMOTE_DIR")
+JUPYTER_CMD="if ! cd ${REMOTE_DIR_QUOTED} 2>/dev/null; then cd ~ || exit 1; fi; exec jupyter notebook --no-browser --ip=0.0.0.0"
 
 info "Connecting to ${USER}@${HOST}..."
 info "Starting Jupyter notebook..."

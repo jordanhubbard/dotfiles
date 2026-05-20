@@ -30,7 +30,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 info() {
-	[[ $VERBOSE -eq 1 ]] && echo -e "${BLUE}[INFO]${NC} $*" >&2
+	if [[ $VERBOSE -eq 1 ]]; then
+		echo -e "${BLUE}[INFO]${NC} $*" >&2
+	fi
 }
 
 warn() {
@@ -42,7 +44,9 @@ error() {
 }
 
 success() {
-	[[ $VERBOSE -eq 1 ]] && echo -e "${GREEN}[OK]${NC} $*" >&2
+	if [[ $VERBOSE -eq 1 ]]; then
+		echo -e "${GREEN}[OK]${NC} $*" >&2
+	fi
 }
 
 usage() {
@@ -117,38 +121,68 @@ changed=0
 skipped=0
 errors=0
 
+replace_symlink() {
+	local new_target="$1"
+	local file="$2"
+	local file_dir file_base tmp_link
+
+	file_dir=$(dirname "$file")
+	file_base=$(basename "$file")
+	tmp_link="${file_dir}/.${file_base}.tmp.$$"
+	while [[ -e "$tmp_link" || -L "$tmp_link" ]]; do
+		tmp_link="${tmp_link}.${RANDOM}"
+	done
+
+	if ! ln -s "$new_target" "$tmp_link"; then
+		return 1
+	fi
+
+	if mv -Tf "$tmp_link" "$file" 2>/dev/null; then
+		return 0
+	fi
+
+	if rm -f "$file" && mv -f "$tmp_link" "$file"; then
+		return 0
+	fi
+
+	rm -f "$tmp_link"
+	return 1
+}
+
 info "Replacing '$from' with '$to' in symlink targets"
-[[ $DRY_RUN -eq 1 ]] && echo -e "${YELLOW}DRY RUN MODE - No changes will be made${NC}"
+if [[ $DRY_RUN -eq 1 ]]; then
+	echo -e "${YELLOW}DRY RUN MODE - No changes will be made${NC}"
+fi
 
 # Process each file
 for file in "$@"; do
-	((total++))
+	((total += 1))
 
 	# Check if file exists
 	if [[ ! -e "$file" && ! -L "$file" ]]; then
 		warn "File does not exist: $file"
-		((skipped++))
+		((skipped += 1))
 		continue
 	fi
 
 	# Check if it's a symlink
 	if [[ ! -L "$file" ]]; then
 		info "Not a symlink, skipping: $file"
-		((skipped++))
+		((skipped += 1))
 		continue
 	fi
 
 	# Read the current target
 	if ! current_target=$(readlink "$file"); then
 		error "Failed to read symlink: $file"
-		((errors++))
+		((errors += 1))
 		continue
 	fi
 
 	# Check if target contains the search string
 	if [[ "$current_target" != *"$from"* ]]; then
 		info "Target doesn't contain '$from', skipping: $file"
-		((skipped++))
+		((skipped += 1))
 		continue
 	fi
 
@@ -160,17 +194,17 @@ for file in "$@"; do
 		echo "$file"
 		echo "  Current: $current_target"
 		echo "  New:     $new_target"
+		((changed += 1))
 	else
 		info "Updating: $file"
 		info "  $current_target → $new_target"
 
-		# Remove old symlink and create new one
-		if rm -f "$file" && ln -s "$new_target" "$file"; then
+		if replace_symlink "$new_target" "$file"; then
 			success "Updated: $file"
-			((changed++))
+			((changed += 1))
 		else
 			error "Failed to update: $file"
-			((errors++))
+			((errors += 1))
 		fi
 	fi
 done

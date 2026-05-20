@@ -21,9 +21,11 @@
 if command -v timeout >/dev/null 2>&1; then
 	# Check if this is the real timeout command (not this script)
 	TIMEOUT_PATH=$(command -v timeout)
+	SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
+	TIMEOUT_REALPATH="$(cd "$(dirname "$TIMEOUT_PATH")" && pwd -P)/$(basename "$TIMEOUT_PATH")"
 	# If the path is this script, we need to use the fallback
 	# Otherwise, use the native timeout
-	if [[ "$TIMEOUT_PATH" != "$0" ]] && [[ "$(basename "$TIMEOUT_PATH")" == "timeout" ]]; then
+	if [[ "$TIMEOUT_REALPATH" != "$SCRIPT_PATH" ]] && [[ "$(basename "$TIMEOUT_PATH")" == "timeout" ]]; then
 		# Found a real timeout command, use it
 		exec "$TIMEOUT_PATH" "$@"
 	fi
@@ -84,6 +86,14 @@ def parse_signal(signal_str):
     except (ValueError, OSError):
         print(f"timeout: invalid signal '{signal_str}'", file=sys.stderr)
         sys.exit(125)
+
+def exit_status(returncode, default=125):
+    """Return a shell-compatible exit status for a subprocess return code."""
+    if returncode is None:
+        return default
+    if returncode < 0:
+        return 128 - returncode
+    return returncode
 
 def show_usage():
     """Show usage information."""
@@ -251,13 +261,13 @@ def main():
     # Determine exit code
     if timed_out:
         if preserve_status:
-            sys.exit(returncode if returncode is not None else 124)
+            sys.exit(exit_status(returncode, 124))
         elif killed:
             sys.exit(137)  # 128 + SIGKILL (9)
         else:
             sys.exit(124)
     else:
-        sys.exit(returncode)
+        sys.exit(exit_status(returncode))
 
 if __name__ == '__main__':
     main()
