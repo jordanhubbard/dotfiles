@@ -84,11 +84,13 @@ run python script.py              # Run Python script
 Run a vLLM OpenAI-compatible server for local reasoning models.
 
 ```bash
-run-vllm-coder.sh small     # DeepSeek-R1-Distill-Qwen-7B AWQ
-run-vllm-coder.sh medium    # DeepSeek-R1-Distill-Qwen-14B AWQ
-run-vllm-coder.sh large     # DeepSeek-R1-Distill-Qwen-32B AWQ
-run-vllm-coder.sh qwq       # QwQ-32B AWQ alternative
-VLLM_GPU_MEMORY_UTILIZATION=0.80 VLLM_MAX_NUM_SEQS=16 run-vllm-coder.sh medium
+run-vllm-coder.sh --help       # Show model presets and environment options
+run-vllm-coder.sh --wizard     # Detect GPUs and suggest a launch command
+run-vllm-coder.sh qwen-fp8     # Qwen3.6 27B FP8 preset
+run-vllm-coder.sh small        # DeepSeek-R1-Distill-Qwen-7B AWQ
+run-vllm-coder.sh large        # DeepSeek-R1-Distill-Qwen-32B AWQ
+run-vllm-coder.sh qwq          # QwQ-32B AWQ alternative
+VLLM_GPU_MEMORY_UTILIZATION=0.80 VLLM_MAX_NUM_SEQS=16 run-vllm-coder.sh deepseek-medium
 ```
 
 #### summarize-document.py / summarize.sh
