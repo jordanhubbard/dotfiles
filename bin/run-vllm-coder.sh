@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_NAME="${0##*/}"
 DEFAULT_MODEL_CHOICE="qwen3.6-27b"
+DEFAULT_VLLM_RUNTIME="host"
 DEFAULT_VLLM_IMAGE="docker.io/vllm/vllm-openai:v0.19.0"
 DEFAULT_VLLM_MIN_VERSION="0.19.0"
 
@@ -20,15 +21,17 @@ Usage:
   ${SCRIPT_NAME} --list-models
   ${SCRIPT_NAME} --help
 
-Start a Dockerized vLLM OpenAI-compatible server for local coding and
-reasoning models. The script detects NVIDIA GPUs, chooses sensible defaults for
-the selected model preset, and appends any extra arguments to "vllm serve".
+Start a vLLM OpenAI-compatible server for local coding and reasoning models.
+The script detects NVIDIA GPUs, chooses sensible defaults for the selected
+model preset, and appends any extra arguments to "vllm serve".
 
 Examples:
   ${SCRIPT_NAME}
   ${SCRIPT_NAME} qwen-fp8
+  ${SCRIPT_NAME} qwen-bf16
   ${SCRIPT_NAME} deepseek-small --swap-space 16
   ${SCRIPT_NAME} --wizard
+  VLLM_RUNTIME=docker ${SCRIPT_NAME} qwen
   VLLM_MAX_MODEL_LEN=32768 VLLM_MAX_NUM_SEQS=1 ${SCRIPT_NAME} qwen
 
 Script options:
@@ -40,11 +43,13 @@ Script options:
 $(model_catalog)
 
 Core environment:
-  VLLM_IMAGE                 Container image.
+  VLLM_RUNTIME               host, docker, or auto.
+                             Default: ${DEFAULT_VLLM_RUNTIME}
+  VLLM_IMAGE                 Docker image when VLLM_RUNTIME=docker.
                              Default: ${DEFAULT_VLLM_IMAGE}
-  VLLM_MIN_VERSION           Minimum vLLM package version inside the container.
+  VLLM_MIN_VERSION           Minimum vLLM package version.
                              Default: ${DEFAULT_VLLM_MIN_VERSION}
-  VLLM_UPGRADE               auto, force, or 0/false to disable container upgrade.
+  VLLM_UPGRADE               auto, force, or 0/false to disable upgrade checks.
                              Default: auto
   VLLM_PREFETCH              Download/resume the model before serving.
                              Default: 1
@@ -52,15 +57,15 @@ Core environment:
                              Default: ~/.cache/huggingface
   VLLM_CACHE_DIR             Host vLLM cache mount.
                              Default: ~/.cache/vllm
-  HF_TOKEN                   Optional Hugging Face token passed to the container.
+  HF_TOKEN                   Optional Hugging Face token.
   HUGGING_FACE_HUB_TOKEN     Optional alternate Hugging Face token.
 
-Network and container environment:
-  VLLM_HOST                  Address vLLM binds inside the container.
+Network and Docker environment:
+  VLLM_HOST                  Address vLLM binds.
                              Default: 0.0.0.0
-  VLLM_HOST_PORT             Host port published to localhost.
+  VLLM_HOST_PORT             Host/listen port.
                              Default: 8000
-  VLLM_CONTAINER_PORT        Container port vLLM listens on.
+  VLLM_CONTAINER_PORT        Container port vLLM listens on when Docker is used.
                              Default: 8000
 
 Model and serving environment:
@@ -104,17 +109,24 @@ model_catalog() {
 Model presets:
   qwen3.6-27b
     Aliases: qwen, qwen3.6, default, medium
+    Model:   Qwen/Qwen3.6-27B-FP8
+    Use for: Default Qwen3.6 coding model with lower weight memory pressure.
+    Defaults: bf16 runtime dtype, fp8 KV cache, Qwen reasoning/parser support,
+              tool calling, prefix caching, 65536-262144 token context.
+
+  qwen-bf16
+    Aliases: bf16
     Model:   Qwen/Qwen3.6-27B
-    Use for: Highest-quality default coding model when VRAM is ample.
-    Defaults: bf16 weights, fp8 KV cache, Qwen reasoning/parser support,
-              tool calling, prefix caching, 245760-262144 token context.
+    Use for: Full bf16 Qwen3.6 weights when VRAM is ample or CPU offload is acceptable.
+    Defaults: bf16 weights, fp8 KV cache, single-sequence CPU offload fallback,
+              tool calling, prefix caching, 65536-262144 token context.
 
   qwen-fp8
     Aliases: fp8
     Model:   Qwen/Qwen3.6-27B-FP8
     Use for: Qwen3.6 behavior with lower weight memory pressure.
     Defaults: bf16 runtime dtype, fp8 KV cache, tool calling, prefix caching,
-              245760-262144 token context.
+              65536-262144 token context.
 
   deepseek-small
     Aliases: small
@@ -324,16 +336,43 @@ print_gpu_inventory() {
 }
 
 initialize_runtime_defaults() {
+  VLLM_RUNTIME="${VLLM_RUNTIME:-${DEFAULT_VLLM_RUNTIME}}"
+  case "${VLLM_RUNTIME,,}" in
+    host|local)
+      VLLM_RUNTIME="host"
+      ;;
+    docker|container)
+      VLLM_RUNTIME="docker"
+      ;;
+    auto)
+      if command -v vllm >/dev/null 2>&1; then
+        VLLM_RUNTIME="host"
+      elif command -v docker >/dev/null 2>&1; then
+        VLLM_RUNTIME="docker"
+      else
+        die "neither host vllm nor docker was found"
+      fi
+      ;;
+    *)
+      die "invalid VLLM_RUNTIME=${VLLM_RUNTIME}; expected host, docker, or auto"
+      ;;
+  esac
+
   VLLM_IMAGE="${VLLM_IMAGE:-${DEFAULT_VLLM_IMAGE}}"
   VLLM_MIN_VERSION="${VLLM_MIN_VERSION:-${DEFAULT_VLLM_MIN_VERSION}}"
   VLLM_UPGRADE="${VLLM_UPGRADE:-auto}"
   VLLM_PREFETCH="${VLLM_PREFETCH:-1}"
-  HF_CACHE_DIR="${HF_CACHE_DIR:-${HOME}/.cache/huggingface}"
-  VLLM_CACHE_DIR="${VLLM_CACHE_DIR:-${HOME}/.cache/vllm}"
+  HF_CACHE_DIR="${HF_CACHE_DIR:-${HF_HOME:-${HOME}/.cache/huggingface}}"
+  VLLM_CACHE_DIR="${VLLM_CACHE_DIR:-${VLLM_CACHE_ROOT:-${HOME}/.cache/vllm}}"
   VLLM_HOST="${VLLM_HOST:-0.0.0.0}"
   VLLM_HOST_PORT="${VLLM_HOST_PORT:-8000}"
   VLLM_CONTAINER_PORT="${VLLM_CONTAINER_PORT:-8000}"
   VLLM_TENSOR_PARALLEL_SIZE="${VLLM_TENSOR_PARALLEL_SIZE:-${GPU_COUNT}}"
+  if [[ "$VLLM_RUNTIME" == "host" ]]; then
+    VLLM_SERVE_PORT="${VLLM_HOST_PORT}"
+  else
+    VLLM_SERVE_PORT="${VLLM_CONTAINER_PORT}"
+  fi
 
   MODEL_ID=""
   MODEL_PROFILE_NAME=""
@@ -365,14 +404,42 @@ initialize_runtime_defaults() {
 }
 
 configure_qwen36_27b() {
-  MODEL_PROFILE_NAME="Qwen3.6 27B"
+  MODEL_PROFILE_NAME="Qwen3.6 27B FP8"
+  MODEL_ID="${VLLM_MODEL:-Qwen/Qwen3.6-27B-FP8}"
+  set_default VLLM_DTYPE "bfloat16"
+  set_default VLLM_GPU_MEMORY_UTILIZATION "0.92"
+
+  if [[ -z "$VLLM_MAX_MODEL_LEN" ]]; then
+    if [[ "$VLLM_TENSOR_PARALLEL_SIZE" -eq 1 ]]; then
+      VLLM_MAX_MODEL_LEN="65536"
+    else
+      VLLM_MAX_MODEL_LEN="262144"
+    fi
+  fi
+
+  set_default VLLM_KV_CACHE_DTYPE "fp8"
+  set_default VLLM_MAX_NUM_SEQS "4"
+  set_default VLLM_MAX_NUM_BATCHED_TOKENS "8192"
+  set_default VLLM_REASONING_PARSER "qwen3"
+  set_default VLLM_TOOL_CALL_PARSER "qwen3_coder"
+  set_default VLLM_ENABLE_TOOL_CALLS "1"
+  set_default VLLM_LANGUAGE_MODEL_ONLY "1"
+  set_default VLLM_ENABLE_PREFIX_CACHING "1"
+
+  if [[ -z "$VLLM_ENFORCE_EAGER" && -n "$VLLM_CPU_OFFLOAD_GB" && "$VLLM_CPU_OFFLOAD_GB" != "0" ]]; then
+    VLLM_ENFORCE_EAGER="1"
+  fi
+}
+
+configure_qwen36_27b_bf16() {
+  MODEL_PROFILE_NAME="Qwen3.6 27B bf16"
   MODEL_ID="${VLLM_MODEL:-Qwen/Qwen3.6-27B}"
   set_default VLLM_DTYPE "bfloat16"
   set_default VLLM_GPU_MEMORY_UTILIZATION "0.92"
 
   if [[ -z "$VLLM_MAX_MODEL_LEN" ]]; then
     if [[ "$VLLM_TENSOR_PARALLEL_SIZE" -eq 1 ]]; then
-      VLLM_MAX_MODEL_LEN="245760"
+      VLLM_MAX_MODEL_LEN="65536"
     else
       VLLM_MAX_MODEL_LEN="262144"
     fi
@@ -384,14 +451,7 @@ configure_qwen36_27b() {
     set_default VLLM_OFFLOAD_NUM_IN_GROUP "1"
   fi
 
-  if [[ -z "$VLLM_MAX_NUM_SEQS" ]]; then
-    if [[ "$VLLM_TENSOR_PARALLEL_SIZE" -eq 1 ]]; then
-      VLLM_MAX_NUM_SEQS="1"
-    else
-      VLLM_MAX_NUM_SEQS="4"
-    fi
-  fi
-
+  set_default VLLM_MAX_NUM_SEQS "1"
   set_default VLLM_MAX_NUM_BATCHED_TOKENS "8192"
   set_default VLLM_REASONING_PARSER "qwen3"
   set_default VLLM_TOOL_CALL_PARSER "qwen3_coder"
@@ -412,7 +472,7 @@ configure_qwen36_27b_fp8() {
 
   if [[ -z "$VLLM_MAX_MODEL_LEN" ]]; then
     if [[ "$VLLM_TENSOR_PARALLEL_SIZE" -eq 1 ]]; then
-      VLLM_MAX_MODEL_LEN="245760"
+      VLLM_MAX_MODEL_LEN="65536"
     else
       VLLM_MAX_MODEL_LEN="262144"
     fi
@@ -449,6 +509,9 @@ select_model_profile() {
     qwen|qwen3.6|qwen3.6-27b|default|medium)
       configure_qwen36_27b
       ;;
+    qwen-bf16|bf16)
+      configure_qwen36_27b_bf16
+      ;;
     qwen-fp8|fp8)
       configure_qwen36_27b_fp8
       ;;
@@ -476,6 +539,11 @@ select_model_profile() {
 }
 
 build_common_docker_args() {
+  if [[ "$VLLM_RUNTIME" != "docker" ]]; then
+    COMMON_DOCKER_ARGS=()
+    return
+  fi
+
   COMMON_DOCKER_ARGS=(
     --rm --gpus all
     --entrypoint bash
@@ -503,7 +571,7 @@ build_vllm_args() {
   VLLM_ARGS=(
     vllm serve "${MODEL_ID}"
     --host "${VLLM_HOST}"
-    --port "${VLLM_CONTAINER_PORT}"
+    --port "${VLLM_SERVE_PORT}"
     --dtype "${VLLM_DTYPE}"
     --gpu-memory-utilization "${VLLM_GPU_MEMORY_UTILIZATION}"
     --max-model-len "${VLLM_MAX_MODEL_LEN}"
@@ -544,13 +612,29 @@ build_vllm_args() {
 }
 
 print_launch_summary() {
+  printf "Runtime: %s\n" "$VLLM_RUNTIME"
   printf "Using preset: %s (%s)\n" "$MODEL_CHOICE" "$MODEL_PROFILE_NAME"
   printf "Using model: %s\n" "$MODEL_ID"
-  printf "Using image: %s\n" "$VLLM_IMAGE"
+  if [[ "$VLLM_RUNTIME" == "docker" ]]; then
+    printf "Using image: %s\n" "$VLLM_IMAGE"
+  else
+    printf "Using host vLLM at %s\n" "$(command -v vllm || printf "not found")"
+  fi
   printf "Tensor parallel size: %s of %s detected GPU(s)\n" \
     "$VLLM_TENSOR_PARALLEL_SIZE" "$GPU_COUNT"
   printf "Context length: %s tokens; max sequences: %s\n" \
     "$VLLM_MAX_MODEL_LEN" "$VLLM_MAX_NUM_SEQS"
+  if [[ -n "$VLLM_CPU_OFFLOAD_GB" && "$VLLM_CPU_OFFLOAD_GB" != "0" ]]; then
+    printf "CPU offload: enabled (--cpu-offload-gb %s; slower decode expected)\n" "$VLLM_CPU_OFFLOAD_GB"
+  elif [[ -n "$VLLM_OFFLOAD_GROUP_SIZE" && "$VLLM_OFFLOAD_GROUP_SIZE" != "0" ]]; then
+    printf "CPU offload: enabled (--offload-group-size %s" "$VLLM_OFFLOAD_GROUP_SIZE"
+    if [[ -n "$VLLM_OFFLOAD_NUM_IN_GROUP" && "$VLLM_OFFLOAD_NUM_IN_GROUP" != "0" ]]; then
+      printf " --offload-num-in-group %s" "$VLLM_OFFLOAD_NUM_IN_GROUP"
+    fi
+    printf "; slower decode expected)\n"
+  else
+    printf "CPU offload: disabled\n"
+  fi
   printf "Endpoint: http://localhost:%s/v1\n" "$VLLM_HOST_PORT"
 }
 
@@ -685,7 +769,7 @@ run_setup_wizard() {
     print_gpu_inventory
   else
     warn "nvidia-smi was not found or did not return NVIDIA GPUs."
-    warn "This script can only launch vLLM with Docker's NVIDIA GPU runtime."
+    warn "This script can only launch vLLM when NVIDIA GPUs are visible."
     local manual_count manual_memory
     manual_count="$(prompt_default "Number of NVIDIA GPUs to plan for" "1")"
     manual_memory="$(prompt_default "VRAM per GPU in GiB" "24")"
@@ -909,6 +993,99 @@ unset VLLM_MIN_VERSION VLLM_UPGRADE VLLM_PREFETCH RUN_VLLM_CODER_MODEL_ID
 exec "$@"
 '
 
+check_host_vllm_version() {
+  python3 - "${VLLM_MIN_VERSION}" <<'PY'
+import importlib.metadata
+import re
+import sys
+
+minimum = sys.argv[1]
+
+def normalize(version):
+    parts = re.findall(r"\d+", version.split("+", 1)[0])
+    parts = (parts + ["0", "0", "0"])[:3]
+    return tuple(int(part) for part in parts)
+
+try:
+    current = importlib.metadata.version("vllm")
+except importlib.metadata.PackageNotFoundError:
+    print("host vLLM package metadata was not found")
+    sys.exit(1)
+
+print(f"Host vLLM version: {current}")
+if normalize(current) < normalize(minimum):
+    print(f"vLLM {current} is below required {minimum}")
+    sys.exit(1)
+PY
+}
+
+upgrade_host_vllm() {
+  echo "Upgrading host vLLM to >=${VLLM_MIN_VERSION}..."
+  if command -v uv >/dev/null 2>&1; then
+    uv pip install --upgrade "vllm>=${VLLM_MIN_VERSION}" --torch-backend=auto
+  else
+    python3 -m pip install --upgrade "vllm>=${VLLM_MIN_VERSION}"
+  fi
+}
+
+prefetch_host_model() {
+  case "${VLLM_PREFETCH,,}" in
+    0|false|no|off)
+      ;;
+    1|true|yes|on)
+      echo "Prefetching ${MODEL_ID} into the Hugging Face cache..."
+      export HF_HUB_ENABLE_HF_TRANSFER="${HF_HUB_ENABLE_HF_TRANSFER:-1}"
+      if command -v hf >/dev/null 2>&1; then
+        hf download "${MODEL_ID}"
+      elif command -v huggingface-cli >/dev/null 2>&1; then
+        huggingface-cli download "${MODEL_ID}"
+      else
+        warn "hf and huggingface-cli were not found; letting vLLM download the model"
+      fi
+      ;;
+    *)
+      die "Invalid VLLM_PREFETCH=${VLLM_PREFETCH}; expected true or false"
+      ;;
+  esac
+}
+
+run_host_runtime() {
+  if ! command -v vllm >/dev/null 2>&1; then
+    die "vllm was not found on PATH; install vLLM on the host or set VLLM_RUNTIME=docker"
+  fi
+
+  case "${VLLM_UPGRADE,,}" in
+    0|false|no|off)
+      ;;
+    force)
+      upgrade_host_vllm
+      ;;
+    auto|1|true|yes|on)
+      if ! check_host_vllm_version; then
+        die "host vLLM is missing or older than ${VLLM_MIN_VERSION}; upgrade it or set VLLM_UPGRADE=force"
+      fi
+      ;;
+    *)
+      die "Invalid VLLM_UPGRADE=${VLLM_UPGRADE}; expected auto, force, or false"
+      ;;
+  esac
+
+  export HF_HOME="${HF_CACHE_DIR}"
+  export VLLM_CACHE_ROOT="${VLLM_CACHE_DIR}"
+  prefetch_host_model
+  "${VLLM_ARGS[@]}" 2>&1 | tee run-vllm-coder.out
+}
+
+run_docker_runtime() {
+  if ! command -v docker >/dev/null 2>&1; then
+    die "docker was not found; install Docker with NVIDIA GPU support or use VLLM_RUNTIME=host"
+  fi
+
+  docker run "${COMMON_DOCKER_ARGS[@]}" "${VLLM_IMAGE}" \
+    -lc "${VLLM_BOOTSTRAP}" bash "${VLLM_ARGS[@]}" \
+    2>&1 | tee run-vllm-coder.out
+}
+
 main() {
   parse_args "$@"
 
@@ -923,10 +1100,6 @@ main() {
     die "nvidia-smi not found or no NVIDIA GPUs were detected"
   fi
 
-  if ! command -v docker >/dev/null 2>&1; then
-    die "docker was not found; install Docker with NVIDIA GPU support"
-  fi
-
   initialize_runtime_defaults
   select_model_profile
   build_common_docker_args
@@ -935,9 +1108,10 @@ main() {
   mkdir -p "${HF_CACHE_DIR}" "${VLLM_CACHE_DIR}"
   print_launch_summary
 
-  docker run "${COMMON_DOCKER_ARGS[@]}" "${VLLM_IMAGE}" \
-    -lc "${VLLM_BOOTSTRAP}" bash "${VLLM_ARGS[@]}" \
-    2>&1 | tee run-vllm-coder.out
+  case "$VLLM_RUNTIME" in
+    host) run_host_runtime ;;
+    docker) run_docker_runtime ;;
+  esac
 }
 
 main "$@"

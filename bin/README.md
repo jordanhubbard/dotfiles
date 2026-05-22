@@ -86,10 +86,13 @@ Run a vLLM OpenAI-compatible server for local reasoning models.
 ```bash
 run-vllm-coder.sh --help       # Show model presets and environment options
 run-vllm-coder.sh --wizard     # Detect GPUs and suggest a launch command
+run-vllm-coder.sh              # Qwen/Qwen3.6-27B-FP8 on host vLLM
+run-vllm-coder.sh qwen-bf16    # Qwen/Qwen3.6-27B, CPU offload fallback on one GPU
 run-vllm-coder.sh qwen-fp8     # Qwen3.6 27B FP8 preset
 run-vllm-coder.sh small        # DeepSeek-R1-Distill-Qwen-7B AWQ
 run-vllm-coder.sh large        # DeepSeek-R1-Distill-Qwen-32B AWQ
 run-vllm-coder.sh qwq          # QwQ-32B AWQ alternative
+VLLM_RUNTIME=docker run-vllm-coder.sh qwen # Optional container path
 VLLM_GPU_MEMORY_UTILIZATION=0.80 VLLM_MAX_NUM_SEQS=16 run-vllm-coder.sh deepseek-medium
 ```
 
@@ -163,7 +166,7 @@ Some scripts require additional tools:
 - **llvm-bootstrap.sh**: git, cmake, make, clang or gcc
 - **mount-sshfs.sh**: sshfs, macFUSE (macOS)
 - **start-jupyter.sh**: jupyter or docker (with nvidia-docker for GPU)
-- **run-vllm-coder.sh**: docker, nvidia-docker, nvidia-smi
+- **run-vllm-coder.sh**: vllm, nvidia-smi; docker/nvidia-docker only with `VLLM_RUNTIME=docker`
 - **summarize-document.py**: python3, requests, pdfplumber (for PDFs)
 - **wakehost.sh**: wakeonlan or etherwake
 - **worldclock.sh**: Tcl/Tk (wish)
