@@ -96,6 +96,11 @@ VLLM_RUNTIME=docker run-vllm-coder.sh qwen # Optional container path
 VLLM_GPU_MEMORY_UTILIZATION=0.80 VLLM_MAX_NUM_SEQS=16 run-vllm-coder.sh deepseek-medium
 ```
 
+Host mode installs vLLM into the script state directory's `.venv` instead of
+the system Python environment. By default for this repo layout, that state
+directory is the dotfiles repo root and the log is written to
+`run-vllm-coder.out` there.
+
 #### summarize-document.py / summarize.sh
 Summarize documents using Ollama LLM.
 
@@ -166,7 +171,7 @@ Some scripts require additional tools:
 - **llvm-bootstrap.sh**: git, cmake, make, clang or gcc
 - **mount-sshfs.sh**: sshfs, macFUSE (macOS)
 - **start-jupyter.sh**: jupyter or docker (with nvidia-docker for GPU)
-- **run-vllm-coder.sh**: vllm, nvidia-smi; docker/nvidia-docker only with `VLLM_RUNTIME=docker`
+- **run-vllm-coder.sh**: python3 venv support, nvidia-smi; docker/nvidia-docker only with `VLLM_RUNTIME=docker`
 - **summarize-document.py**: python3, requests, pdfplumber (for PDFs)
 - **wakehost.sh**: wakeonlan or etherwake
 - **worldclock.sh**: Tcl/Tk (wish)

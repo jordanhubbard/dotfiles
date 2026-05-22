@@ -2,6 +2,12 @@
 set -euo pipefail
 
 SCRIPT_NAME="${0##*/}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ "${SCRIPT_DIR##*/}" == "bin" ]]; then
+  DEFAULT_RUN_VLLM_CODER_STATE_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+else
+  DEFAULT_RUN_VLLM_CODER_STATE_DIR="${SCRIPT_DIR}"
+fi
 DEFAULT_MODEL_CHOICE="qwen3.6-27b"
 DEFAULT_VLLM_RUNTIME="host"
 DEFAULT_VLLM_IMAGE="docker.io/vllm/vllm-openai:v0.19.0"
@@ -53,6 +59,12 @@ Core environment:
                              Default: auto
   VLLM_PREFETCH              Download/resume the model before serving.
                              Default: 1
+  RUN_VLLM_CODER_STATE_DIR   Directory for the host .venv and output log.
+                             Default: ${DEFAULT_RUN_VLLM_CODER_STATE_DIR}
+  VLLM_VENV_DIR              Host runtime virtualenv.
+                             Default: \${RUN_VLLM_CODER_STATE_DIR:-${DEFAULT_RUN_VLLM_CODER_STATE_DIR}}/.venv
+  RUN_VLLM_CODER_OUT         Log path for vLLM output.
+                             Default: \${RUN_VLLM_CODER_STATE_DIR:-${DEFAULT_RUN_VLLM_CODER_STATE_DIR}}/run-vllm-coder.out
   HF_CACHE_DIR               Host Hugging Face cache mount.
                              Default: ~/.cache/huggingface
   VLLM_CACHE_DIR             Host vLLM cache mount.
@@ -336,6 +348,12 @@ print_gpu_inventory() {
 }
 
 initialize_runtime_defaults() {
+  RUN_VLLM_CODER_STATE_DIR="${RUN_VLLM_CODER_STATE_DIR:-${DEFAULT_RUN_VLLM_CODER_STATE_DIR}}"
+  VLLM_VENV_DIR="${VLLM_VENV_DIR:-${RUN_VLLM_CODER_STATE_DIR}/.venv}"
+  RUN_VLLM_CODER_OUT="${RUN_VLLM_CODER_OUT:-${RUN_VLLM_CODER_STATE_DIR}/run-vllm-coder.out}"
+  VLLM_HOST_PYTHON="${VLLM_VENV_DIR}/bin/python"
+  VLLM_HOST_VLLM="${VLLM_VENV_DIR}/bin/vllm"
+
   VLLM_RUNTIME="${VLLM_RUNTIME:-${DEFAULT_VLLM_RUNTIME}}"
   case "${VLLM_RUNTIME,,}" in
     host|local)
@@ -345,12 +363,12 @@ initialize_runtime_defaults() {
       VLLM_RUNTIME="docker"
       ;;
     auto)
-      if command -v vllm >/dev/null 2>&1; then
+      if [[ -x "${VLLM_HOST_VLLM}" ]]; then
         VLLM_RUNTIME="host"
       elif command -v docker >/dev/null 2>&1; then
         VLLM_RUNTIME="docker"
       else
-        die "neither host vllm nor docker was found"
+        VLLM_RUNTIME="host"
       fi
       ;;
     *)
@@ -568,8 +586,13 @@ build_common_docker_args() {
 }
 
 build_vllm_args() {
+  local vllm_command="vllm"
+  if [[ "$VLLM_RUNTIME" == "host" ]]; then
+    vllm_command="${VLLM_HOST_VLLM}"
+  fi
+
   VLLM_ARGS=(
-    vllm serve "${MODEL_ID}"
+    "${vllm_command}" serve "${MODEL_ID}"
     --host "${VLLM_HOST}"
     --port "${VLLM_SERVE_PORT}"
     --dtype "${VLLM_DTYPE}"
@@ -618,8 +641,14 @@ print_launch_summary() {
   if [[ "$VLLM_RUNTIME" == "docker" ]]; then
     printf "Using image: %s\n" "$VLLM_IMAGE"
   else
-    printf "Using host vLLM at %s\n" "$(command -v vllm || printf "not found")"
+    if [[ -x "${VLLM_HOST_VLLM}" ]]; then
+      printf "Using host vLLM at %s\n" "${VLLM_HOST_VLLM}"
+    else
+      printf "Using host vLLM at %s (not installed yet)\n" "${VLLM_HOST_VLLM}"
+    fi
+    printf "Host virtualenv: %s\n" "${VLLM_VENV_DIR}"
   fi
+  printf "Output log: %s\n" "${RUN_VLLM_CODER_OUT}"
   printf "Tensor parallel size: %s of %s detected GPU(s)\n" \
     "$VLLM_TENSOR_PARALLEL_SIZE" "$GPU_COUNT"
   printf "Context length: %s tokens; max sequences: %s\n" \
@@ -636,6 +665,10 @@ print_launch_summary() {
     printf "CPU offload: disabled\n"
   fi
   printf "Endpoint: http://localhost:%s/v1\n" "$VLLM_HOST_PORT"
+}
+
+start_output_log() {
+  exec > >(tee "${RUN_VLLM_CODER_OUT}") 2>&1
 }
 
 add_wizard_export() {
@@ -993,8 +1026,38 @@ unset VLLM_MIN_VERSION VLLM_UPGRADE VLLM_PREFETCH RUN_VLLM_CODER_MODEL_ID
 exec "$@"
 '
 
+ensure_host_venv() {
+  mkdir -p "$(dirname -- "${VLLM_VENV_DIR}")"
+  if [[ ! -x "${VLLM_HOST_PYTHON}" ]]; then
+    echo "Creating host vLLM virtualenv at ${VLLM_VENV_DIR}..."
+    if ! python3 -m venv "${VLLM_VENV_DIR}"; then
+      warn "python3 -m venv could not seed pip; retrying without pip"
+      python3 -m venv --without-pip "${VLLM_VENV_DIR}"
+    fi
+  fi
+
+  if ! "${VLLM_HOST_PYTHON}" -m pip --version >/dev/null 2>&1; then
+    if "${VLLM_HOST_PYTHON}" -m ensurepip --upgrade; then
+      return
+    fi
+
+    local get_pip_url="${VLLM_GET_PIP_URL:-https://bootstrap.pypa.io/get-pip.py}"
+    local get_pip_path="${VLLM_VENV_DIR}/get-pip.py"
+    warn "ensurepip is unavailable; bootstrapping pip inside ${VLLM_VENV_DIR} from ${get_pip_url}"
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL "${get_pip_url}" -o "${get_pip_path}"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -qO "${get_pip_path}" "${get_pip_url}"
+    else
+      die "ensurepip is unavailable and neither curl nor wget was found; cannot bootstrap pip in ${VLLM_VENV_DIR}"
+    fi
+    "${VLLM_HOST_PYTHON}" "${get_pip_path}"
+    rm -f "${get_pip_path}"
+  fi
+}
+
 check_host_vllm_version() {
-  python3 - "${VLLM_MIN_VERSION}" <<'PY'
+  "${VLLM_HOST_PYTHON}" - "${VLLM_MIN_VERSION}" <<'PY'
 import importlib.metadata
 import re
 import sys
@@ -1009,7 +1072,7 @@ def normalize(version):
 try:
     current = importlib.metadata.version("vllm")
 except importlib.metadata.PackageNotFoundError:
-    print("host vLLM package metadata was not found")
+    print("host vLLM package metadata was not found in the virtualenv")
     sys.exit(1)
 
 print(f"Host vLLM version: {current}")
@@ -1020,17 +1083,18 @@ PY
 }
 
 upgrade_host_vllm() {
-  echo "Installing/upgrading host vLLM to >=${VLLM_MIN_VERSION}..."
+  ensure_host_venv
+  echo "Installing/upgrading host vLLM to >=${VLLM_MIN_VERSION} in ${VLLM_VENV_DIR}..."
   if command -v uv >/dev/null 2>&1; then
-    uv pip install --upgrade "vllm>=${VLLM_MIN_VERSION}" --torch-backend=auto
+    uv pip install --python "${VLLM_HOST_PYTHON}" --upgrade "vllm>=${VLLM_MIN_VERSION}" --torch-backend=auto
   else
-    python3 -m pip install --upgrade "vllm>=${VLLM_MIN_VERSION}"
+    "${VLLM_HOST_PYTHON}" -m pip install --upgrade "vllm>=${VLLM_MIN_VERSION}"
   fi
 }
 
 ensure_host_vllm_command() {
-  if ! command -v vllm >/dev/null 2>&1; then
-    die "vllm was not found on PATH; check the Python script install directory, enable VLLM_UPGRADE, or set VLLM_RUNTIME=docker"
+  if [[ ! -x "${VLLM_HOST_VLLM}" ]]; then
+    die "vllm was not found in ${VLLM_VENV_DIR}; enable VLLM_UPGRADE or set VLLM_RUNTIME=docker"
   fi
 }
 
@@ -1041,12 +1105,12 @@ prefetch_host_model() {
     1|true|yes|on)
       echo "Prefetching ${MODEL_ID} into the Hugging Face cache..."
       export HF_HUB_ENABLE_HF_TRANSFER="${HF_HUB_ENABLE_HF_TRANSFER:-1}"
-      if command -v hf >/dev/null 2>&1; then
-        hf download "${MODEL_ID}"
-      elif command -v huggingface-cli >/dev/null 2>&1; then
-        huggingface-cli download "${MODEL_ID}"
+      if [[ -x "${VLLM_VENV_DIR}/bin/hf" ]]; then
+        "${VLLM_VENV_DIR}/bin/hf" download "${MODEL_ID}"
+      elif [[ -x "${VLLM_VENV_DIR}/bin/huggingface-cli" ]]; then
+        "${VLLM_VENV_DIR}/bin/huggingface-cli" download "${MODEL_ID}"
       else
-        warn "hf and huggingface-cli were not found; letting vLLM download the model"
+        warn "hf and huggingface-cli were not found in ${VLLM_VENV_DIR}; letting vLLM download the model"
       fi
       ;;
     *)
@@ -1056,8 +1120,10 @@ prefetch_host_model() {
 }
 
 run_host_runtime() {
+  ensure_host_venv
+
   local host_vllm_missing=0
-  if ! command -v vllm >/dev/null 2>&1; then
+  if [[ ! -x "${VLLM_HOST_VLLM}" ]]; then
     host_vllm_missing=1
   fi
 
@@ -1078,10 +1144,11 @@ run_host_runtime() {
   esac
 
   ensure_host_vllm_command
+  export PATH="${VLLM_VENV_DIR}/bin:${PATH}"
   export HF_HOME="${HF_CACHE_DIR}"
   export VLLM_CACHE_ROOT="${VLLM_CACHE_DIR}"
   prefetch_host_model
-  "${VLLM_ARGS[@]}" 2>&1 | tee run-vllm-coder.out
+  "${VLLM_ARGS[@]}"
 }
 
 run_docker_runtime() {
@@ -1090,8 +1157,7 @@ run_docker_runtime() {
   fi
 
   docker run "${COMMON_DOCKER_ARGS[@]}" "${VLLM_IMAGE}" \
-    -lc "${VLLM_BOOTSTRAP}" bash "${VLLM_ARGS[@]}" \
-    2>&1 | tee run-vllm-coder.out
+    -lc "${VLLM_BOOTSTRAP}" bash "${VLLM_ARGS[@]}"
 }
 
 main() {
@@ -1113,7 +1179,9 @@ main() {
   build_common_docker_args
   build_vllm_args
 
-  mkdir -p "${HF_CACHE_DIR}" "${VLLM_CACHE_DIR}"
+  mkdir -p "${RUN_VLLM_CODER_STATE_DIR}" "$(dirname -- "${RUN_VLLM_CODER_OUT}")" \
+    "${HF_CACHE_DIR}" "${VLLM_CACHE_DIR}"
+  start_output_log
   print_launch_summary
 
   case "$VLLM_RUNTIME" in
