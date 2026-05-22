@@ -1020,11 +1020,17 @@ PY
 }
 
 upgrade_host_vllm() {
-  echo "Upgrading host vLLM to >=${VLLM_MIN_VERSION}..."
+  echo "Installing/upgrading host vLLM to >=${VLLM_MIN_VERSION}..."
   if command -v uv >/dev/null 2>&1; then
     uv pip install --upgrade "vllm>=${VLLM_MIN_VERSION}" --torch-backend=auto
   else
     python3 -m pip install --upgrade "vllm>=${VLLM_MIN_VERSION}"
+  fi
+}
+
+ensure_host_vllm_command() {
+  if ! command -v vllm >/dev/null 2>&1; then
+    die "vllm was not found on PATH; check the Python script install directory, enable VLLM_UPGRADE, or set VLLM_RUNTIME=docker"
   fi
 }
 
@@ -1050,8 +1056,9 @@ prefetch_host_model() {
 }
 
 run_host_runtime() {
+  local host_vllm_missing=0
   if ! command -v vllm >/dev/null 2>&1; then
-    die "vllm was not found on PATH; install vLLM on the host or set VLLM_RUNTIME=docker"
+    host_vllm_missing=1
   fi
 
   case "${VLLM_UPGRADE,,}" in
@@ -1061,8 +1068,8 @@ run_host_runtime() {
       upgrade_host_vllm
       ;;
     auto|1|true|yes|on)
-      if ! check_host_vllm_version; then
-        die "host vLLM is missing or older than ${VLLM_MIN_VERSION}; upgrade it or set VLLM_UPGRADE=force"
+      if [[ "$host_vllm_missing" == "1" ]] || ! check_host_vllm_version; then
+        upgrade_host_vllm
       fi
       ;;
     *)
@@ -1070,6 +1077,7 @@ run_host_runtime() {
       ;;
   esac
 
+  ensure_host_vllm_command
   export HF_HOME="${HF_CACHE_DIR}"
   export VLLM_CACHE_ROOT="${VLLM_CACHE_DIR}"
   prefetch_host_model
