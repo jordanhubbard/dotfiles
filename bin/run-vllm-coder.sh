@@ -443,6 +443,10 @@ configure_qwen36_27b() {
   set_default VLLM_ENABLE_TOOL_CALLS "1"
   set_default VLLM_LANGUAGE_MODEL_ONLY "1"
   set_default VLLM_ENABLE_PREFIX_CACHING "1"
+  # Disable Qwen3 thinking by default. Agentic clients (e.g. ai-code-reviewer)
+  # read only message.content; a <think> block truncated before it closes leaves
+  # content empty and stalls them. Override by exporting the env var.
+  set_default VLLM_DEFAULT_CHAT_TEMPLATE_KWARGS '{"enable_thinking": false}'
 
   if [[ -z "$VLLM_ENFORCE_EAGER" && -n "$VLLM_CPU_OFFLOAD_GB" && "$VLLM_CPU_OFFLOAD_GB" != "0" ]]; then
     VLLM_ENFORCE_EAGER="1"
@@ -476,6 +480,10 @@ configure_qwen36_27b_bf16() {
   set_default VLLM_ENABLE_TOOL_CALLS "1"
   set_default VLLM_LANGUAGE_MODEL_ONLY "1"
   set_default VLLM_ENABLE_PREFIX_CACHING "1"
+  # Disable Qwen3 thinking by default. Agentic clients (e.g. ai-code-reviewer)
+  # read only message.content; a <think> block truncated before it closes leaves
+  # content empty and stalls them. Override by exporting the env var.
+  set_default VLLM_DEFAULT_CHAT_TEMPLATE_KWARGS '{"enable_thinking": false}'
 
   if [[ -z "$VLLM_ENFORCE_EAGER" && -n "$VLLM_CPU_OFFLOAD_GB" && "$VLLM_CPU_OFFLOAD_GB" != "0" ]]; then
     VLLM_ENFORCE_EAGER="1"
@@ -504,6 +512,10 @@ configure_qwen36_27b_fp8() {
   set_default VLLM_ENABLE_TOOL_CALLS "1"
   set_default VLLM_LANGUAGE_MODEL_ONLY "1"
   set_default VLLM_ENABLE_PREFIX_CACHING "1"
+  # Disable Qwen3 thinking by default. Agentic clients (e.g. ai-code-reviewer)
+  # read only message.content; a <think> block truncated before it closes leaves
+  # content empty and stalls them. Override by exporting the env var.
+  set_default VLLM_DEFAULT_CHAT_TEMPLATE_KWARGS '{"enable_thinking": false}'
 }
 
 configure_awq_reasoner() {
