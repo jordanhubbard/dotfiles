@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# sc - scp using the same host shorthand as s (short/.local hostnames,
+#      default user), so copying files behaves consistently with ssh
+#
+# Usage: sc [-R] [scp-args...] source... dest
+#   -R        use root instead of the default user (REMOTE_DEFAULT_USER,
+#             "jkh" if unset) for every host:path argument.
+#             (Uppercase to avoid colliding with scp's own -r/recursive.)
+#
+# Any argument shaped like "host:path" (no dot required, no user@ prefix)
+# is expanded to "user@host.local:path" before being handed to scp. Local
+# paths, flags, and already-qualified user@host:path specs pass through
+# unchanged.
+#
+# Examples:
+#   sc myhost:/etc/foo .          # copy from myhost.local as $REMOTE_DEFAULT_USER
+#   sc -R notes.txt myhost:/tmp   # copy to myhost.local as root
+#
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=remote-common.sh
+source "${SCRIPT_DIR}/remote-common.sh"
+
+if [[ $# -lt 2 ]]; then
+	echo "Usage: sc [-R] [scp-args...] source... dest" >&2
+	exit 1
+fi
+
+root_flag=()
+if [[ "$1" == "-R" ]]; then
+	root_flag=(-r)
+	shift
+fi
+
+args=()
+for arg in "$@"; do
+	args+=("$(remote_resolve_spec "${root_flag[@]}" "$arg")")
+done
+
+exec scp -p "${args[@]}"

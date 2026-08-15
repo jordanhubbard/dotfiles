@@ -111,6 +111,20 @@ summarize.sh -m llama2 notes.txt "Extract key points"
 
 ### Network Tools
 
+#### s / sc / sm
+ssh, scp, and mosh wrappers that expand short/.local hostnames and apply a
+default remote user (`REMOTE_DEFAULT_USER`, "jkh" if unset). `s` and `sc`
+share the same hostname resolution (see `remote-common.sh`) so ssh and scp
+behave consistently.
+
+```bash
+s myhost                          # ssh jkh@myhost.local
+s myhost -r                       # ssh root@myhost.local
+sc myhost:/etc/foo .              # scp from jkh@myhost.local
+sc -R notes.txt myhost:/tmp       # scp to root@myhost.local
+sm myhost                         # mosh jkh@myhost.local
+```
+
 #### wakehost.sh
 Wake up computers using Wake-on-LAN.
 

@@ -620,29 +620,9 @@ vc() {
     open "vnc://${host}"
 }
 
-# SSH helpers
-sm() {
-    SSH_CMD=mosh s "$@"
-}
-
-s() {
-    if [[ $# -lt 1 ]]; then
-        echo "Usage: s hostname [-r] [ssh-args]" >&2
-        return 1
-    fi
-    
-    local host="$1"
-    shift
-    
-    local user="jkh"
-    if [[ "$1" == "-r" ]]; then
-        user="root"
-        shift
-    fi
-    
-    [[ "$host" != *.* ]] && host="${host}.local"
-    ${SSH_CMD:-ssh} "$@" "${user}@${host}"
-}
+# SSH/scp helpers (s, sc, sm) now live as scripts in bin/ so they can be
+# allow-listed individually and share host-resolution logic between ssh
+# and scp; see bin/remote-common.sh.
 
 # Remote tmux session
 remote-tmux() {

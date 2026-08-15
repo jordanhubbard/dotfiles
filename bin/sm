@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#
+# sm - mosh to a host, using the same hostname/user resolution as s
+#
+# Usage: sm hostname [-r] [mosh-args...]
+#
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec env SSH_CMD=mosh "${SCRIPT_DIR}/s" "$@"
