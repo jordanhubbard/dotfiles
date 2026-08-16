@@ -119,8 +119,10 @@ behave consistently.
 
 ```bash
 s myhost                          # ssh jkh@myhost.local
-s myhost -r                       # ssh root@myhost.local
+s -r myhost                       # ssh root@myhost.local
 s otheruser@myhost                # ssh otheruser@myhost.local
+s -p 2222 myhost                  # ssh options go before the host, like real ssh
+s myhost ls -la                   # trailing args are a remote command, like real ssh
 sc myhost:/etc/foo .              # scp from jkh@myhost.local
 sc -R notes.txt myhost:/tmp       # scp to root@myhost.local
 sm myhost                         # mosh jkh@myhost.local
