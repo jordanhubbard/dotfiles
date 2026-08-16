@@ -31,4 +31,4 @@ if [[ "${1:-}" == "-r" ]]; then
 fi
 
 target="$(remote_resolve_host "${root_flag[@]}" "$host")"
-exec "${SSH_CMD:-ssh}" "$@" "$target"
+exec "${SSH_CMD:-ssh}" "$target" "$@"
