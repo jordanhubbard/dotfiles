@@ -14,7 +14,9 @@
 #
 # A hostname with no dot is expanded to "hostname.local". An explicit
 # "user@" prefix overrides the default user (and -r). Set SSH_CMD to use
-# a different client (mosh, etc); see also sm.
+# a different client (mosh, etc); see also sm. Set REMOTE_OPT_TAKES_ARG
+# to override which short options consume a separate argument, when the
+# client's grammar differs from ssh's (see sm).
 #
 
 set -euo pipefail
@@ -30,9 +32,10 @@ usage() {
 
 [[ $# -ge 1 ]] || usage
 
-# Short ssh options that consume a separate argument (unless the value is
-# bundled, e.g. -p2222), matching ssh(1)'s own option grammar.
-takes_arg="BbcDEeFIiJLlmOopQRSWw"
+# Short options that consume a separate argument (unless the value is
+# bundled, e.g. -p2222), matching ssh(1)'s own option grammar by default.
+# Override with REMOTE_OPT_TAKES_ARG when the client's grammar differs.
+takes_arg="${REMOTE_OPT_TAKES_ARG:-BbcDEeFIiJLlmOopQRSWw}"
 
 ssh_opts=()
 root_flag=()
