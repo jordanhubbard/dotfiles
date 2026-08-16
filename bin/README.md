@@ -30,6 +30,18 @@ llvm-bootstrap.sh -j 8            # Use 8 parallel jobs
 llvm-bootstrap.sh -r              # Resume interrupted build
 ```
 
+### Git Tools
+
+#### git-sync-all.sh
+Sync all git repositories under `~/Src` (pull each, optionally discarding
+local `.beads/issues.jsonl` changes first).
+
+```bash
+git-sync-all.sh                   # Sync ~/Src
+git-sync-all.sh ~/Work            # Sync a different directory
+git-sync-all.sh --discard-beads   # Discard .beads/issues.jsonl before pulling
+```
+
 ### File & System Management
 
 #### link-sed.sh
@@ -145,6 +157,16 @@ Display a graphical world clock with multiple timezones.
 worldclock.sh                     # Launch GUI clock
 ```
 
+#### timeout
+GNU-`timeout`-compatible wrapper: passes through to the native `timeout` on
+Linux, or a bundled Python implementation on systems (e.g. macOS) that lack
+one.
+
+```bash
+timeout 10s ./long-running-script.sh
+timeout --kill-after=10s 5s make test
+```
+
 ## Getting Help
 
 All scripts support the `-h` or `--help` flag for detailed usage information:
@@ -166,10 +188,12 @@ All scripts include:
 
 ## Installation
 
-Make sure all scripts are executable:
+Make sure all scripts are executable (some, like `run`, `s`, `sc`, `sm`,
+and `timeout`, have no file extension, so a `*.sh`/`*.py` glob will miss
+them):
 
 ```bash
-chmod +x bin/*.sh bin/*.py
+chmod +x bin/*
 ```
 
 Add the bin directory to your PATH:
@@ -184,12 +208,14 @@ source ~/.bashrc
 Some scripts require additional tools:
 
 - **extract-soname.sh**: python3, pyelftools (optional), objdump
+- **git-sync-all.sh**: git
 - **install-hashicorp.sh**: curl, gpg, apt (Debian/Ubuntu only)
 - **llvm-bootstrap.sh**: git, cmake, make, clang or gcc
 - **mount-sshfs.sh**: sshfs, macFUSE (macOS)
 - **start-jupyter.sh**: jupyter or docker (with nvidia-docker for GPU)
 - **run-vllm-coder.sh**: python3 venv support, nvidia-smi; docker/nvidia-docker only with `VLLM_RUNTIME=docker`
 - **summarize-document.py**: python3, requests, pdfplumber (for PDFs)
+- **timeout**: python3 (only on systems without a native GNU `timeout`, e.g. macOS)
 - **wakehost.sh**: wakeonlan or etherwake
 - **worldclock.sh**: Tcl/Tk (wish)
 
