@@ -2,11 +2,12 @@
 #
 # s - ssh to a host, expanding short/.local hostnames and a default user
 #
-# Usage: s hostname [-r] [ssh-args...]
+# Usage: s [user@]hostname [-r] [ssh-args...]
 #   -r        connect as root instead of the default user (REMOTE_DEFAULT_USER,
 #             "jkh" if unset)
 #
-# A hostname with no dot is expanded to "hostname.local". Set SSH_CMD to use
+# A hostname with no dot is expanded to "hostname.local". An explicit
+# "user@" prefix overrides the default user (and -r). Set SSH_CMD to use
 # a different client (mosh, etc); see also sm.
 #
 
@@ -31,4 +32,4 @@ if [[ "${1:-}" == "-r" ]]; then
 fi
 
 target="$(remote_resolve_host "${root_flag[@]}" "$host")"
-exec "${SSH_CMD:-ssh}" "$@" "$target"
+exec "${SSH_CMD:-ssh}" "$target" "$@"

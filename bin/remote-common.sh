@@ -16,7 +16,9 @@ remote_fqdn() {
 	[[ "$host" == *.* ]] && printf '%s\n' "$host" || printf '%s.local\n' "$host"
 }
 
-# Resolve a bare hostname to user@fqdn.
+# Resolve a bare hostname (or an explicit user@hostname) to user@fqdn.
+# An explicit "user@" prefix on the hostname overrides both the default
+# user and -r.
 # Usage: remote_resolve_host [-r] hostname
 remote_resolve_host() {
 	local user="$REMOTE_DEFAULT_USER"
@@ -24,7 +26,12 @@ remote_resolve_host() {
 		user="root"
 		shift
 	fi
-	printf '%s@%s\n' "$user" "$(remote_fqdn "$1")"
+	local host="$1"
+	if [[ "$host" == *"@"* ]]; then
+		user="${host%%@*}"
+		host="${host#*@}"
+	fi
+	printf '%s@%s\n' "$user" "$(remote_fqdn "$host")"
 }
 
 # Resolve an scp-style argument: bare-host:path or host:path.
