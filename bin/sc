@@ -3,19 +3,26 @@
 # sc - scp using the same host shorthand as s (short/.local hostnames,
 #      default user), so copying files behaves consistently with ssh
 #
-# Usage: sc [-R] [scp-args...] source... dest
+# Usage: sc [-R] [scp-options...] source... dest
 #   -R        use root instead of the default user (REMOTE_DEFAULT_USER,
 #             "jkh" if unset) for every host:path argument.
 #             (Uppercase to avoid colliding with scp's own -r/recursive.)
 #
-# Any argument shaped like "host:path" (no dot required, no user@ prefix)
-# is expanded to "user@host.local:path" before being handed to scp. Local
-# paths, flags, and already-qualified user@host:path specs pass through
-# unchanged.
+# Any positional argument shaped like "host:path" (no dot required, no
+# user@ prefix) is expanded to "user@host.local:path" before being handed
+# to scp. Local paths (including ones starting with ./ or ../, even if
+# they contain a colon), plain flags and their values, and specs already
+# qualified as user@host:path pass through unchanged.
+#
+# scp's own option flags (and the flags' arguments, e.g. -o's value) are
+# never run through host resolution - only source/dest positionals are -
+# so an scp flag that happens to look like "-r" or contain a colon (e.g.
+# -o "ProxyCommand=ssh -W %h:%p bastion") can't be misread as a host spec.
 #
 # Examples:
 #   sc myhost:/etc/foo .          # copy from myhost.local as $REMOTE_DEFAULT_USER
 #   sc -R notes.txt myhost:/tmp   # copy to myhost.local as root
+#   sc -o ProxyJump=bastion myhost:/etc/foo .
 #
 
 set -euo pipefail
@@ -25,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/remote-common.sh"
 
 if [[ $# -lt 2 ]]; then
-	echo "Usage: sc [-R] [scp-args...] source... dest" >&2
+	echo "Usage: sc [-R] [scp-options...] source... dest" >&2
 	exit 1
 fi
 
@@ -35,9 +42,43 @@ if [[ "$1" == "-R" ]]; then
 	shift
 fi
 
-args=()
-for arg in "$@"; do
-	args+=("$(remote_resolve_spec "${root_flag[@]}" "$arg")")
+# Short scp options that consume a separate argument (unless the value is
+# bundled, e.g. -oFoo=bar), matching scp(1)'s own option grammar. Their
+# values are opaque to us and passed through untouched.
+takes_arg="cDFiJloPSX"
+
+out=()
+i=0
+args=("$@")
+n=$#
+
+while (( i < n )); do
+	arg="${args[$i]}"
+
+	if [[ "$arg" == "--" ]]; then
+		out+=("$arg")
+		(( ++i ))
+		while (( i < n )); do
+			out+=("$(remote_resolve_spec "${root_flag[@]}" "${args[$i]}")")
+			(( ++i ))
+		done
+		break
+	fi
+
+	if [[ "$arg" == -?* ]]; then
+		out+=("$arg")
+		if [[ "${#arg}" -eq 2 && "$takes_arg" == *"${arg:1:1}"* ]]; then
+			(( ++i ))
+			if [[ $i -lt $n ]]; then
+				out+=("${args[$i]}")
+			fi
+		fi
+		(( ++i ))
+		continue
+	fi
+
+	out+=("$(remote_resolve_spec "${root_flag[@]}" "$arg")")
+	(( ++i ))
 done
 
-exec scp -p "${args[@]}"
+exec scp -p "${out[@]}"

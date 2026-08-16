@@ -36,7 +36,9 @@ remote_resolve_host() {
 
 # Resolve an scp-style argument: bare-host:path or host:path.
 # Local paths, plain flags, and specs that are already user@host:path are
-# left untouched, so ssh and scp can share one notion of "a host".
+# left untouched, so ssh and scp can share one notion of "a host". Callers
+# must only pass positional source/dest specs here, never scp's own option
+# flags or option values - see sc, which separates those out first.
 # Usage: remote_resolve_spec [-r] spec
 remote_resolve_spec() {
 	local user="$REMOTE_DEFAULT_USER"
@@ -45,6 +47,13 @@ remote_resolve_spec() {
 		shift
 	fi
 	local spec="$1"
+
+	# A path starting with /, ./, or ../ is unambiguously local, even if it
+	# contains a colon (matches scp's own local/remote disambiguation).
+	if [[ "$spec" == /* || "$spec" == ./* || "$spec" == ../* ]]; then
+		printf '%s\n' "$spec"
+		return 0
+	fi
 
 	if [[ "$spec" == *"@"* || "$spec" != *:* ]]; then
 		printf '%s\n' "$spec"
