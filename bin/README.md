@@ -120,6 +120,7 @@ behave consistently.
 ```bash
 s myhost                          # ssh jkh@myhost.local
 s myhost -r                       # ssh root@myhost.local
+s otheruser@myhost                # ssh otheruser@myhost.local
 sc myhost:/etc/foo .              # scp from jkh@myhost.local
 sc -R notes.txt myhost:/tmp       # scp to root@myhost.local
 sm myhost                         # mosh jkh@myhost.local
