@@ -2,7 +2,13 @@
 #
 # s - ssh to a host, expanding short/.local hostnames and a default user
 #
-# Usage: s [user@]hostname [-r] [ssh-args...]
+# Usage: s [ssh-options...] [-r] [user@]hostname [command...]
+#
+# Drop-in replacement for ssh: any ssh option may appear before the
+# destination, exactly like real ssh (options after the destination are
+# the remote command, per ssh's own grammar). Our one addition, -r, may
+# appear anywhere among the leading options.
+#
 #   -r        connect as root instead of the default user (REMOTE_DEFAULT_USER,
 #             "jkh" if unset)
 #
@@ -17,19 +23,64 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=remote-common.sh
 source "${SCRIPT_DIR}/remote-common.sh"
 
-if [[ $# -lt 1 ]]; then
-	echo "Usage: s hostname [-r] [ssh-args...]" >&2
+usage() {
+	echo "Usage: s [ssh-options...] [-r] [user@]hostname [command...]" >&2
 	exit 1
-fi
+}
 
-host="$1"
-shift
+[[ $# -ge 1 ]] || usage
 
+# Short ssh options that consume a separate argument (unless the value is
+# bundled, e.g. -p2222), matching ssh(1)'s own option grammar.
+takes_arg="BbcDEeFIiJLlmOopQRSWw"
+
+ssh_opts=()
 root_flag=()
-if [[ "${1:-}" == "-r" ]]; then
-	root_flag=(-r)
-	shift
-fi
+host=""
+i=0
+args=("$@")
+n=$#
+
+while (( i < n )); do
+	arg="${args[$i]}"
+
+	if [[ -n "$host" ]]; then
+		break
+	fi
+
+	if [[ "$arg" == "--" ]]; then
+		(( ++i ))
+		[[ $i -lt $n ]] || usage
+		host="${args[$i]}"
+		(( ++i ))
+		break
+	fi
+
+	if [[ "$arg" == "-r" ]]; then
+		root_flag=(-r)
+		(( ++i ))
+		continue
+	fi
+
+	if [[ "$arg" == -?* ]]; then
+		ssh_opts+=("$arg")
+		if [[ "${#arg}" -eq 2 && "$takes_arg" == *"${arg:1:1}"* ]]; then
+			(( ++i ))
+			if [[ $i -lt $n ]]; then
+				ssh_opts+=("${args[$i]}")
+			fi
+		fi
+		(( ++i ))
+		continue
+	fi
+
+	host="$arg"
+	(( ++i ))
+done
+
+[[ -n "$host" ]] || usage
+
+remaining=("${args[@]:$i}")
 
 target="$(remote_resolve_host "${root_flag[@]}" "$host")"
-exec "${SSH_CMD:-ssh}" "$target" "$@"
+exec "${SSH_CMD:-ssh}" "${ssh_opts[@]}" "$target" "${remaining[@]+"${remaining[@]}"}"

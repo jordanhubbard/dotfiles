@@ -2,7 +2,14 @@
 #
 # sm - mosh to a host, using the same hostname/user resolution as s
 #
-# Usage: sm hostname [-r] [mosh-args...]
+# Usage: sm [mosh-options...] [-r] [user@]hostname [command...]
+#
+# Forwards straight through to s's option parser, which models ssh's
+# option grammar (most single-letter flags take a separate argument).
+# mosh's own flags mostly agree with this (e.g. -p takes a port), but a
+# few short options differ from ssh's meaning/arity (e.g. mosh's -o is a
+# no-argument predict-overwrite flag) - use the long form (--predict=...)
+# for those to avoid ambiguity.
 #
 
 set -euo pipefail
