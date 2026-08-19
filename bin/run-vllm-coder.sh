@@ -8,7 +8,7 @@ if [[ "${SCRIPT_DIR##*/}" == "bin" ]]; then
 else
   DEFAULT_RUN_VLLM_CODER_STATE_DIR="${SCRIPT_DIR}"
 fi
-DEFAULT_MODEL_CHOICE="qwen3.6-27b"
+DEFAULT_MODEL_CHOICE="nemotron-lightning"
 DEFAULT_VLLM_RUNTIME="host"
 DEFAULT_VLLM_IMAGE="docker.io/vllm/vllm-openai:v0.19.0"
 DEFAULT_VLLM_MIN_VERSION="0.19.0"
@@ -119,31 +119,44 @@ EOF
 model_catalog() {
   cat <<'EOF'
 Model presets:
-  qwen3.6-27b
-    Aliases: qwen, qwen3.6, default, medium
-    Model:   Qwen/Qwen3.6-27B-FP8
-    Use for: Default Qwen3.6 coding model with lower weight memory pressure.
-    Defaults: bf16 runtime dtype, fp8 KV cache, Qwen reasoning/parser support,
+  nemotron-lightning
+    Aliases: nemotron, lightning, medium, default
+    Model:   nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+    Use for: Default mid-capability tier. MoE (30B total / 3B active params),
+              BF16 weights broadly compatible with small GPUs since no
+              quantization kernel is required; excellent free NVIDIA model.
+    Defaults: bf16 runtime dtype, fp8 KV cache, tool calling, prefix caching,
+              65536-131072 token context.
+
+  qwen3.8-27b
+    Aliases: qwen, qwen3.8, qwen3.6, qwen3.6-27b, high
+    Model:   Qwen/Qwen3.8-27B
+    Use for: High-capability tier. Strongest coding model in this catalog.
+              bf16-only for now; no Qwen3.8 FP8 repo is known yet (use
+              qwen-fp8 below if you specifically need the older FP8 weights).
+    Defaults: bf16 weights, fp8 KV cache, Qwen reasoning/parser support,
               tool calling, prefix caching, 65536-262144 token context.
 
   qwen-bf16
     Aliases: bf16
-    Model:   Qwen/Qwen3.6-27B
-    Use for: Full bf16 Qwen3.6 weights when VRAM is ample or CPU offload is acceptable.
+    Model:   Qwen/Qwen3.8-27B
+    Use for: Full bf16 Qwen3.8 weights when VRAM is ample or CPU offload is acceptable.
     Defaults: bf16 weights, fp8 KV cache, single-sequence CPU offload fallback,
               tool calling, prefix caching, 65536-262144 token context.
 
   qwen-fp8
     Aliases: fp8
     Model:   Qwen/Qwen3.6-27B-FP8
-    Use for: Qwen3.6 behavior with lower weight memory pressure.
+    Use for: Qwen3.6 FP8 weights (lower memory pressure). Pinned to 3.6 since
+              no Qwen3.8-27B-FP8 repo is confirmed to exist yet.
     Defaults: bf16 runtime dtype, fp8 KV cache, tool calling, prefix caching,
               65536-262144 token context.
 
   deepseek-small
-    Aliases: small
+    Aliases: small, low
     Model:   casperhansen/deepseek-r1-distill-qwen-7b-awq
-    Use for: Smaller GPUs, faster startup, or many concurrent requests.
+    Use for: Low-capability tier. Smaller GPUs, faster startup, or many
+              concurrent requests.
     Defaults: AWQ Marlin, fp16, fp8 KV cache, 8192 token context.
 
   deepseek-medium
@@ -421,9 +434,9 @@ initialize_runtime_defaults() {
   fi
 }
 
-configure_qwen36_27b() {
-  MODEL_PROFILE_NAME="Qwen3.6 27B FP8"
-  MODEL_ID="${VLLM_MODEL:-Qwen/Qwen3.6-27B-FP8}"
+configure_qwen38_27b() {
+  MODEL_PROFILE_NAME="Qwen3.8 27B bf16"
+  MODEL_ID="${VLLM_MODEL:-Qwen/Qwen3.8-27B}"
   set_default VLLM_DTYPE "bfloat16"
   set_default VLLM_GPU_MEMORY_UTILIZATION "0.92"
 
@@ -453,9 +466,9 @@ configure_qwen36_27b() {
   fi
 }
 
-configure_qwen36_27b_bf16() {
-  MODEL_PROFILE_NAME="Qwen3.6 27B bf16"
-  MODEL_ID="${VLLM_MODEL:-Qwen/Qwen3.6-27B}"
+configure_qwen38_27b_bf16() {
+  MODEL_PROFILE_NAME="Qwen3.8 27B bf16 (CPU offload fallback)"
+  MODEL_ID="${VLLM_MODEL:-Qwen/Qwen3.8-27B}"
   set_default VLLM_DTYPE "bfloat16"
   set_default VLLM_GPU_MEMORY_UTILIZATION "0.92"
 
@@ -491,7 +504,7 @@ configure_qwen36_27b_bf16() {
 }
 
 configure_qwen36_27b_fp8() {
-  MODEL_PROFILE_NAME="Qwen3.6 27B FP8"
+  MODEL_PROFILE_NAME="Qwen3.6 27B FP8 (no Qwen3.8 FP8 repo known yet)"
   MODEL_ID="${VLLM_MODEL:-Qwen/Qwen3.6-27B-FP8}"
   set_default VLLM_DTYPE "bfloat16"
   set_default VLLM_GPU_MEMORY_UTILIZATION "0.92"
@@ -518,6 +531,32 @@ configure_qwen36_27b_fp8() {
   set_default VLLM_DEFAULT_CHAT_TEMPLATE_KWARGS '{"enable_thinking": false}'
 }
 
+configure_nemotron_lightning() {
+  MODEL_PROFILE_NAME="NVIDIA Nemotron 3.5 Lightning 30B-A3B BF16"
+  MODEL_ID="${VLLM_MODEL:-nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16}"
+  set_default VLLM_DTYPE "bfloat16"
+  set_default VLLM_GPU_MEMORY_UTILIZATION "0.90"
+
+  if [[ -z "$VLLM_MAX_MODEL_LEN" ]]; then
+    if [[ "$VLLM_TENSOR_PARALLEL_SIZE" -eq 1 ]]; then
+      VLLM_MAX_MODEL_LEN="65536"
+    else
+      VLLM_MAX_MODEL_LEN="131072"
+    fi
+  fi
+
+  set_default VLLM_KV_CACHE_DTYPE "fp8"
+  set_default VLLM_MAX_NUM_SEQS "4"
+  set_default VLLM_MAX_NUM_BATCHED_TOKENS "8192"
+  set_default VLLM_ENABLE_TOOL_CALLS "1"
+  set_default VLLM_LANGUAGE_MODEL_ONLY "1"
+  set_default VLLM_ENABLE_PREFIX_CACHING "1"
+
+  if [[ -z "$VLLM_ENFORCE_EAGER" && -n "$VLLM_CPU_OFFLOAD_GB" && "$VLLM_CPU_OFFLOAD_GB" != "0" ]]; then
+    VLLM_ENFORCE_EAGER="1"
+  fi
+}
+
 configure_awq_reasoner() {
   local profile_name="$1"
   local default_model="$2"
@@ -536,16 +575,19 @@ configure_awq_reasoner() {
 
 select_model_profile() {
   case "${MODEL_CHOICE,,}" in
-    qwen|qwen3.6|qwen3.6-27b|default|medium)
-      configure_qwen36_27b
+    nemotron-lightning|nemotron|lightning|default|medium)
+      configure_nemotron_lightning
+      ;;
+    qwen|qwen3.8|qwen3.6|qwen3.8-27b|qwen3.6-27b|high)
+      configure_qwen38_27b
       ;;
     qwen-bf16|bf16)
-      configure_qwen36_27b_bf16
+      configure_qwen38_27b_bf16
       ;;
     qwen-fp8|fp8)
       configure_qwen36_27b_fp8
       ;;
-    deepseek-small|small)
+    deepseek-small|small|low)
       configure_awq_reasoner "DeepSeek R1 Distill Qwen 7B AWQ" \
         "casperhansen/deepseek-r1-distill-qwen-7b-awq"
       ;;
@@ -705,13 +747,13 @@ choose_wizard_model() {
         WIZARD_REASON="balanced speed with enough VRAM for the 14B AWQ preset"
       else
         WIZARD_MODEL_CHOICE="deepseek-small"
-        WIZARD_REASON="best fit for lower-memory GPUs and fast startup"
+        WIZARD_REASON="best fit for lower-memory GPUs and fast startup (low tier)"
       fi
       ;;
     balanced)
-      if [[ "$selected_total_gib" -ge 48 && "$per_gpu_gib" -ge 24 ]]; then
-        WIZARD_MODEL_CHOICE="qwen-fp8"
-        WIZARD_REASON="Qwen3.6 quality with lower weight memory pressure"
+      if [[ "$per_gpu_gib" -ge 16 ]]; then
+        WIZARD_MODEL_CHOICE="nemotron-lightning"
+        WIZARD_REASON="free MoE Nemotron Lightning model, broadly compatible bf16 weights (medium tier)"
       elif [[ "$per_gpu_gib" -ge 24 ]]; then
         WIZARD_MODEL_CHOICE="deepseek-medium"
         WIZARD_REASON="good single-GPU balance for local reasoning"
@@ -722,11 +764,11 @@ choose_wizard_model() {
       ;;
     quality)
       if [[ "$selected_total_gib" -ge 80 || "$per_gpu_gib" -ge 64 ]]; then
-        WIZARD_MODEL_CHOICE="qwen3.6-27b"
+        WIZARD_MODEL_CHOICE="qwen3.8-27b"
         WIZARD_REASON="highest-quality preset and enough aggregate VRAM"
       elif [[ "$selected_total_gib" -ge 48 && "$per_gpu_gib" -ge 24 ]]; then
         WIZARD_MODEL_CHOICE="qwen-fp8"
-        WIZARD_REASON="largest Qwen preset likely to fit this hardware"
+        WIZARD_REASON="Qwen3.6 FP8 weights, lower memory pressure than the bf16-only 3.8 preset"
       elif [[ "$per_gpu_gib" -ge 40 ]]; then
         WIZARD_MODEL_CHOICE="deepseek-large"
         WIZARD_REASON="32B AWQ reasoning preset for high-memory single GPU"
@@ -751,7 +793,7 @@ apply_wizard_context_exports() {
       ;;
     long)
       case "$model_choice" in
-        qwen*|fp8)
+        qwen*|fp8|nemotron*|lightning)
           add_wizard_export "VLLM_MAX_MODEL_LEN" "32768"
           ;;
         *)
@@ -770,7 +812,10 @@ print_wizard_alternatives() {
   local selected_total_gib=$((gpu_count * per_gpu_gib))
 
   printf "  Viable presets for this hardware tier:\n"
-  printf "    deepseek-small  - safest fit and fastest startup\n"
+  printf "    deepseek-small     - safest fit and fastest startup (low tier)\n"
+  if [[ "$per_gpu_gib" -ge 16 ]]; then
+    printf "    nemotron-lightning - free MoE Nemotron Lightning, bf16 weights (medium tier)\n"
+  fi
   if [[ "$per_gpu_gib" -ge 24 ]]; then
     printf "    deepseek-medium - stronger AWQ reasoning on a single 24 GiB+ GPU\n"
   fi
@@ -779,10 +824,10 @@ print_wizard_alternatives() {
     printf "    qwq             - alternate 32B AWQ reasoning profile\n"
   fi
   if [[ "$selected_total_gib" -ge 48 && "$per_gpu_gib" -ge 24 ]]; then
-    printf "    qwen-fp8        - Qwen3.6 27B with lower weight memory pressure\n"
+    printf "    qwen-fp8        - Qwen3.6 27B FP8, lower weight memory pressure\n"
   fi
   if [[ "$selected_total_gib" -ge 80 || "$per_gpu_gib" -ge 64 ]]; then
-    printf "    qwen3.6-27b     - full default Qwen3.6 27B preset\n"
+    printf "    qwen3.8-27b     - full high-tier Qwen3.8 27B bf16 preset\n"
   fi
 }
 
@@ -869,7 +914,7 @@ run_setup_wizard() {
 
   if [[ "$WIZARD_MODEL_CHOICE" == qwen* && "$gpu_use" -eq 1 && "$GPU_MEMORY_GIB_MIN" -lt 64 ]]; then
     add_wizard_export "VLLM_MAX_NUM_SEQS" "1"
-    if [[ "$GPU_MEMORY_GIB_MIN" -ge 40 && "$WIZARD_MODEL_CHOICE" == "qwen3.6-27b" ]]; then
+    if [[ "$GPU_MEMORY_GIB_MIN" -ge 40 && "$WIZARD_MODEL_CHOICE" == "qwen3.8-27b" ]]; then
       add_wizard_export "VLLM_CPU_OFFLOAD_GB" "16"
     fi
   fi
