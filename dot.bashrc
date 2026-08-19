@@ -2,9 +2,26 @@
 #
 # .bashrc - Bash configuration file
 #
-# This file is sourced by interactive non-login shells.
-# It sets up the environment, aliases, and functions for daily use.
+# This file is sourced by interactive non-login shells, and -- on Linux, but
+# NOT on macOS -- by `ssh host cmd`. Everything below the interactive guard is
+# for daily use at a terminal; environment that unattended commands need goes
+# in ~/.profile, which is sourced just above that guard.
 #
+
+# Environment, ABOVE the guard on purpose.
+#
+# Linux bash sources this file for `ssh host cmd`, but the guard below returns
+# before any of it runs, so a remote command inherited a bare
+# /usr/bin:/bin:/usr/sbin:/sbin and could not find python3, uv or git. Sourcing
+# ~/.profile here is what makes `ssh host 'echo $PATH'` useful on Linux.
+#
+# macOS bash does not source this file for a remote command at all -- verified
+# with a probe variable at the top of ~/.bashrc, which stayed unset over
+# `ssh puck 'echo $VAR'` and appeared under `bash -lc`. So on macOS, remote
+# automation must invoke a login shell: ssh host 'bash -lc "..."'.
+#
+# ~/.profile is idempotent, so the second source (via .bash_profile) is free.
+[ -r "$HOME/.profile" ] && . "$HOME/.profile"
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
