@@ -39,14 +39,33 @@
 SHELLENV_DONE=1
 export SHELLENV_DONE
 
-# Prepend only if present and not already there, so re-entry and pre-set PATHs
-# (systemd units, launchd jobs, cron) stay clean.
+# Move a directory to the FRONT of PATH, removing any existing occurrence.
+#
+# Promoting, not merely adding, is the point. An earlier version skipped a
+# directory that was already on PATH anywhere -- which left /opt/homebrew/bin
+# where macOS put it, at the END, after /usr/bin. `command -v python3` then
+# resolved to /usr/bin/python3 (3.9) instead of homebrew's 3.14, and
+# `make install` still failed its "Python 3.11+ is required" check on a host
+# with 3.14 installed. Present is not the same as precedent.
+#
+# Pure shell, no subshells: this runs on every login, and a sed per entry is a
+# fork per entry. Empty fields are dropped on the way through, which also
+# clears the stray leading ":" (an empty entry means the current directory)
+# that some inherited PATHs carry.
 _prepend_path() {
     [ -d "$1" ] || return 0
-    case ":${PATH}:" in
-        *":$1:"*) ;;
-        *) PATH="$1:${PATH}" ;;
-    esac
+    _pp_dir=$1
+    _pp_new=$_pp_dir
+    _pp_oifs=$IFS
+    IFS=:
+    for _pp_entry in $PATH; do
+        [ -z "$_pp_entry" ] && continue
+        [ "$_pp_entry" = "$_pp_dir" ] && continue
+        _pp_new="$_pp_new:$_pp_entry"
+    done
+    IFS=$_pp_oifs
+    PATH=$_pp_new
+    unset _pp_dir _pp_new _pp_oifs _pp_entry
 }
 
 # Deliberately smaller than dot.bashrc's `cooldirs`: this is what UNATTENDED
