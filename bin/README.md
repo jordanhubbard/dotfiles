@@ -33,13 +33,15 @@ llvm-bootstrap.sh -r              # Resume interrupted build
 ### Git Tools
 
 #### git-sync-all.sh
-Sync all git repositories under `~/Src` (pull each, optionally discarding
-local `.beads/issues.jsonl` changes first).
+Sync all git repositories under `~/Src`. Detected `.beads/` directories are
+ignored automatically: tracked changes are reset to `HEAD`, while untracked
+runtime data is left in place and excluded from dirty-worktree warnings.
+Repositories whose pulls are blocked by other local changes are listed in
+`~/git-sync-all-local-changes.txt` for hand-inspection.
 
 ```bash
 git-sync-all.sh                   # Sync ~/Src
 git-sync-all.sh ~/Work            # Sync a different directory
-git-sync-all.sh --discard-beads   # Discard .beads/issues.jsonl before pulling
 ```
 
 ### File & System Management
