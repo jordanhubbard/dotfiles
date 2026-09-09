@@ -12,12 +12,16 @@
 # Exit on undefined variables, but not on command failures in loops
 set -u
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+SHELL_COLOR_FD=1
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
+
+RED="$SHELL_COLOR_RED"
+GREEN="$SHELL_COLOR_GREEN"
+YELLOW="$SHELL_COLOR_YELLOW"
+BLUE="$SHELL_COLOR_BLUE"
+NC="$SHELL_COLOR_RESET"
 
 # Default directory
 SYNC_DIR="${1:-$HOME/Src}"

@@ -15,33 +15,15 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
 
 # Available HashiCorp tools
 AVAILABLE_TOOLS="nomad terraform vault consul packer boundary waypoint"
 DEFAULT_TOOLS="nomad terraform vault consul packer"
 
-# Function to print colored output
-info() {
-	echo -e "${GREEN}[INFO]${NC} $*"
-}
-
-warn() {
-	echo -e "${YELLOW}[WARN]${NC} $*"
-}
-
-error() {
-	echo -e "${RED}[ERROR]${NC} $*" >&2
-}
-
-die() {
-	error "$*"
-	exit 1
-}
+PRIVILEGE_CMD=()
 
 # Check if running on a Debian/Ubuntu system
 check_system() {
@@ -49,32 +31,28 @@ check_system() {
 		die "This script is designed for Debian/Ubuntu systems only."
 	fi
 
-	if [[ $EUID -eq 0 ]]; then
-		warn "Running as root is not recommended. Script will use sudo when needed."
+	if [[ $EUID -ne 0 ]]; then
+		require_command sudo "sudo is required when not running as root"
+		PRIVILEGE_CMD=(sudo)
 	fi
 }
 
-# Check for required commands
-check_prerequisites() {
-	local missing=()
-
-	for cmd in curl gpg lsb_release apt-get sudo; do
-		if ! command -v "$cmd" &>/dev/null; then
-			missing+=("$cmd")
-		fi
-	done
-
-	if [[ ${#missing[@]} -gt 0 ]]; then
-		die "Missing required commands: ${missing[*]}"
+# Run a command directly as root or through sudo for an unprivileged caller.
+as_root() {
+	if [[ ${#PRIVILEGE_CMD[@]} -gt 0 ]]; then
+		"${PRIVILEGE_CMD[@]}" "$@"
+	else
+		"$@"
 	fi
 }
 
 # Install prerequisites
 install_prerequisites() {
 	info "Installing prerequisites..."
-	sudo apt-get update || die "Failed to update package lists"
-	sudo apt-get install -y gnupg software-properties-common curl ||
+	as_root apt-get update || die "Failed to update package lists"
+	as_root apt-get install -y gnupg software-properties-common curl lsb-release ||
 		die "Failed to install prerequisites"
+	require_commands curl gpg lsb_release
 }
 
 # Add HashiCorp repository
@@ -84,7 +62,7 @@ add_hashicorp_repo() {
 	# Download and add GPG key (using the modern method)
 	if ! curl -fsSL https://apt.releases.hashicorp.com/gpg |
 		gpg --dearmor |
-		sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg >/dev/null; then
+		as_root tee /usr/share/keyrings/hashicorp-archive-keyring.gpg >/dev/null; then
 		die "Failed to add HashiCorp GPG key"
 	fi
 
@@ -93,12 +71,12 @@ add_hashicorp_repo() {
 	codename=$(lsb_release -cs)
 
 	echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $codename main" |
-		sudo tee /etc/apt/sources.list.d/hashicorp.list >/dev/null ||
+		as_root tee /etc/apt/sources.list.d/hashicorp.list >/dev/null ||
 		die "Failed to add HashiCorp repository"
 
 	# Update package lists
 	info "Updating package lists..."
-	sudo apt-get update || die "Failed to update package lists after adding repository"
+	as_root apt-get update || die "Failed to update package lists after adding repository"
 }
 
 # Install specified tools
@@ -113,10 +91,13 @@ install_tools() {
 
 	# Validate tool names
 	for tool in "${requested[@]}"; do
-		if [[ ! " $AVAILABLE_TOOLS " =~ " $tool " ]]; then
+		case " $AVAILABLE_TOOLS " in
+		*" $tool "*) ;;
+		*)
 			warn "Unknown tool '$tool', skipping. Available: $AVAILABLE_TOOLS"
 			continue
-		fi
+			;;
+		esac
 		tools+=("$tool")
 	done
 
@@ -127,7 +108,7 @@ install_tools() {
 	info "Installing HashiCorp tools: ${tools[*]}"
 
 	# Install tools
-	if ! sudo apt-get install -y "${tools[@]}"; then
+	if ! as_root apt-get install -y "${tools[@]}"; then
 		die "Failed to install some or all tools"
 	fi
 
@@ -149,7 +130,7 @@ main() {
 	echo ""
 
 	check_system
-	check_prerequisites
+	require_command apt-get "apt-get is required on Debian/Ubuntu"
 	install_prerequisites
 	add_hashicorp_repo
 	install_tools "$@"

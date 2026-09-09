@@ -12,29 +12,9 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-info() {
-	echo -e "${BLUE}[INFO]${NC} $*"
-}
-
-success() {
-	echo -e "${GREEN}[SUCCESS]${NC} $*"
-}
-
-error() {
-	echo -e "${RED}[ERROR]${NC} $*" >&2
-}
-
-die() {
-	error "$*"
-	exit 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
 
 usage() {
 	cat <<'EOF'
@@ -54,13 +34,30 @@ EOF
 	exit "${1:-0}"
 }
 
-# Host database: hostname -> MAC address
-# Add your hosts here in the format: [hostname]="MAC:ADDRESS"
-declare -A HOSTS=(
-	[megamind]="a8:a1:59:17:7a:54"
-	[fluffy]="f8:ff:c2:46:45:29"
-	[nvwaffle]="3c:22:fb:e5:21:03"
+# Parallel arrays keep this command compatible with macOS Bash 3.2.
+HOST_NAMES=(
+	"megamind"
+	"fluffy"
+	"nvwaffle"
 )
+HOST_MACS=(
+	"a8:a1:59:17:7a:54"
+	"f8:ff:c2:46:45:29"
+	"3c:22:fb:e5:21:03"
+)
+
+mac_for_host() {
+	local requested_host="$1"
+	local index
+
+	for ((index = 0; index < ${#HOST_NAMES[@]}; index++)); do
+		if [[ "${HOST_NAMES[$index]}" == "$requested_host" ]]; then
+			printf '%s\n' "${HOST_MACS[$index]}"
+			return 0
+		fi
+	done
+	return 1
+}
 
 # List available hosts
 list_hosts() {
@@ -69,12 +66,13 @@ list_hosts() {
 	printf "  %-20s %s\n" "HOSTNAME" "MAC ADDRESS"
 	printf "  %-20s %s\n" "--------" "-----------"
 
-	for host in "${!HOSTS[@]}"; do
-		printf "  %-20s %s\n" "$host" "${HOSTS[$host]}"
+	local index
+	for ((index = 0; index < ${#HOST_NAMES[@]}; index++)); do
+		printf "  %-20s %s\n" "${HOST_NAMES[$index]}" "${HOST_MACS[$index]}"
 	done | sort
 
 	echo ""
-	echo "Total: ${#HOSTS[@]} host(s)"
+	echo "Total: ${#HOST_NAMES[@]} host(s)"
 }
 
 # Validate MAC address format
@@ -89,11 +87,8 @@ is_valid_mac() {
 # Send Wake-on-LAN packet
 wake_host() {
 	local hostname="$1"
-	local mac="${HOSTS[$hostname]}"
-
-	if [[ -z "$mac" ]]; then
-		die "Host not found: $hostname"
-	fi
+	local mac
+	mac="$(mac_for_host "$hostname")" || die "Host not found: $hostname"
 
 	if ! is_valid_mac "$mac"; then
 		die "Invalid MAC address for $hostname: $mac"
@@ -162,7 +157,7 @@ fi
 hostname="$1"
 
 # Check if host is registered
-if [[ -z "${HOSTS[$hostname]:-}" ]]; then
+if ! mac_for_host "$hostname" >/dev/null; then
 	error "Unknown host: $hostname"
 	echo ""
 	list_hosts

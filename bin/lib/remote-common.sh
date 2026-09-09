@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 #
-# remote-common.sh - shared host-resolution helpers for s, sc, sm
+# remote-common.sh - shared hostname and SSH connectivity helpers
 #
-# Not meant to be run directly; sourced by the scripts above so that ssh,
-# scp, and mosh all expand short/.local hostnames and the default remote
-# user the same way.
-#
+# Keep this file compatible with the Bash 3.2 shipped by macOS.
 
 : "${REMOTE_DEFAULT_USER:=jkh}"
 
@@ -36,9 +33,7 @@ remote_resolve_host() {
 
 # Resolve an scp-style argument: bare-host:path or host:path.
 # Local paths, plain flags, and specs that are already user@host:path are
-# left untouched, so ssh and scp can share one notion of "a host". Callers
-# must only pass positional source/dest specs here, never scp's own option
-# flags or option values - see sc, which separates those out first.
+# left untouched. Callers must only pass positional source/dest specs here.
 # Usage: remote_resolve_spec [-r] spec
 remote_resolve_spec() {
 	local user="$REMOTE_DEFAULT_USER"
@@ -48,8 +43,6 @@ remote_resolve_spec() {
 	fi
 	local spec="$1"
 
-	# A path starting with /, ./, or ../ is unambiguously local, even if it
-	# contains a colon (matches scp's own local/remote disambiguation).
 	if [[ "$spec" == /* || "$spec" == ./* || "$spec" == ../* ]]; then
 		printf '%s\n' "$spec"
 		return 0
@@ -63,4 +56,15 @@ remote_resolve_spec() {
 	local host="${spec%%:*}"
 	local path="${spec#*:}"
 	printf '%s@%s:%s\n' "$user" "$(remote_fqdn "$host")" "$path"
+}
+
+# Probe non-interactive SSH connectivity without prompting for credentials.
+# Usage: remote_ssh_available target [port] [timeout_seconds]
+remote_ssh_available() {
+	local target="$1"
+	local port="${2:-22}"
+	local timeout_seconds="${3:-5}"
+
+	ssh -p "$port" -o "ConnectTimeout=${timeout_seconds}" -o BatchMode=yes \
+		"$target" true >/dev/null 2>&1
 }

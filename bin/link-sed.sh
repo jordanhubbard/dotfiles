@@ -18,34 +18,23 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
+
 # Default options
 DRY_RUN=0
 VERBOSE=0
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-info() {
+verbose_info() {
 	if [[ $VERBOSE -eq 1 ]]; then
-		echo -e "${BLUE}[INFO]${NC} $*" >&2
+		info "$*"
 	fi
 }
 
-warn() {
-	echo -e "${YELLOW}[WARN]${NC} $*" >&2
-}
-
-error() {
-	echo -e "${RED}[ERROR]${NC} $*" >&2
-}
-
-success() {
+verbose_success() {
 	if [[ $VERBOSE -eq 1 ]]; then
-		echo -e "${GREEN}[OK]${NC} $*" >&2
+		success "$*"
 	fi
 }
 
@@ -79,7 +68,7 @@ while getopts "dvh" opt; do
 	case "$opt" in
 	d)
 		DRY_RUN=1
-		info "Dry run mode enabled"
+		verbose_info "Dry run mode enabled"
 		;;
 	v)
 		VERBOSE=1
@@ -149,9 +138,9 @@ replace_symlink() {
 	return 1
 }
 
-info "Replacing '$from' with '$to' in symlink targets"
+verbose_info "Replacing '$from' with '$to' in symlink targets"
 if [[ $DRY_RUN -eq 1 ]]; then
-	echo -e "${YELLOW}DRY RUN MODE - No changes will be made${NC}"
+	warn "DRY RUN MODE - No changes will be made"
 fi
 
 # Process each file
@@ -167,7 +156,7 @@ for file in "$@"; do
 
 	# Check if it's a symlink
 	if [[ ! -L "$file" ]]; then
-		info "Not a symlink, skipping: $file"
+		verbose_info "Not a symlink, skipping: $file"
 		((skipped += 1))
 		continue
 	fi
@@ -181,7 +170,7 @@ for file in "$@"; do
 
 	# Check if target contains the search string
 	if [[ "$current_target" != *"$from"* ]]; then
-		info "Target doesn't contain '$from', skipping: $file"
+		verbose_info "Target doesn't contain '$from', skipping: $file"
 		((skipped += 1))
 		continue
 	fi
@@ -196,11 +185,11 @@ for file in "$@"; do
 		echo "  New:     $new_target"
 		((changed += 1))
 	else
-		info "Updating: $file"
-		info "  $current_target → $new_target"
+		verbose_info "Updating: $file"
+		verbose_info "  $current_target → $new_target"
 
 		if replace_symlink "$new_target" "$file"; then
-			success "Updated: $file"
+			verbose_success "Updated: $file"
 			((changed += 1))
 		else
 			error "Failed to update: $file"

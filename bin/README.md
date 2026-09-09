@@ -85,6 +85,8 @@ open-notebook.sh -H myserver.local # Custom host
 
 #### run
 Execute commands in a Docker development container.
+The default image is built from the adjacent `Dockerfile`; set
+`RUN_DOCKERFILE` and `RUN_DOCKER_CONTEXT` to use a different build.
 
 ```bash
 run ls -la                        # List files in container
@@ -100,8 +102,8 @@ Run a vLLM OpenAI-compatible server for local reasoning models.
 ```bash
 run-vllm-coder.sh --help       # Show model presets and environment options
 run-vllm-coder.sh --wizard     # Detect GPUs and suggest a launch command
-run-vllm-coder.sh              # Qwen/Qwen3.6-27B-FP8 on host vLLM
-run-vllm-coder.sh qwen-bf16    # Qwen/Qwen3.6-27B, CPU offload fallback on one GPU
+run-vllm-coder.sh              # Nemotron Lightning default on host vLLM
+run-vllm-coder.sh qwen-bf16    # Qwen/Qwen3.8-27B, CPU offload fallback on one GPU
 run-vllm-coder.sh qwen-fp8     # Qwen3.6 27B FP8 preset
 run-vllm-coder.sh small        # DeepSeek-R1-Distill-Qwen-7B AWQ
 run-vllm-coder.sh large        # DeepSeek-R1-Distill-Qwen-32B AWQ
@@ -128,8 +130,8 @@ summarize.sh -m llama2 notes.txt "Extract key points"
 #### s / sc / sm
 ssh, scp, and mosh wrappers that expand short/.local hostnames and apply a
 default remote user (`REMOTE_DEFAULT_USER`, "jkh" if unset). `s` and `sc`
-share the same hostname resolution (see `remote-common.sh`) so ssh and scp
-behave consistently.
+share the same hostname resolution (see `lib/remote-common.sh`) so ssh, scp,
+SSHFS, and the remote notebook launcher behave consistently.
 
 ```bash
 s myhost                          # ssh jkh@myhost.local
@@ -190,20 +192,23 @@ All scripts include:
 
 ## Installation
 
-Make sure all scripts are executable (some, like `run`, `s`, `sc`, `sm`,
-and `timeout`, have no file extension, so a `*.sh`/`*.py` glob will miss
-them):
+Install the commands, their adjacent Dockerfile, and source libraries into
+`~/Bin`:
 
 ```bash
-chmod +x bin/*
+make install
 ```
 
-Add the bin directory to your PATH:
+Add the installed command directory to your PATH:
 
 ```bash
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+echo 'export PATH="$HOME/Bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
+
+Shared source files are installed as non-executable files under `~/Bin/lib`.
+Set `NO_COLOR=1` to disable colored status output explicitly; output redirected
+to a file or pipe is left uncolored automatically.
 
 ## Dependencies
 
@@ -215,6 +220,7 @@ Some scripts require additional tools:
 - **llvm-bootstrap.sh**: git, cmake, make, clang or gcc
 - **mount-sshfs.sh**: sshfs, macFUSE (macOS)
 - **start-jupyter.sh**: jupyter or docker (with nvidia-docker for GPU)
+- **run**: docker; builds the bundled development image on first use
 - **run-vllm-coder.sh**: python3 venv support, nvidia-smi; docker/nvidia-docker only with `VLLM_RUNTIME=docker`
 - **summarize-document.py**: python3, requests, pdfplumber (for PDFs)
 - **timeout**: python3 (only on systems without a native GNU `timeout`, e.g. macOS)

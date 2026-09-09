@@ -15,33 +15,11 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-info() {
-	echo -e "${BLUE}[INFO]${NC} $*"
-}
-
-warn() {
-	echo -e "${YELLOW}[WARN]${NC} $*"
-}
-
-error() {
-	echo -e "${RED}[ERROR]${NC} $*" >&2
-}
-
-success() {
-	echo -e "${GREEN}[SUCCESS]${NC} $*"
-}
-
-die() {
-	error "$*"
-	exit 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
+# shellcheck source=lib/remote-common.sh
+source "${SCRIPT_DIR}/lib/remote-common.sh"
 
 usage() {
 	cat <<EOF
@@ -67,17 +45,24 @@ EOF
 # Cleanup function
 cleanup() {
 	local exit_code=$?
+	trap - EXIT
+	if [[ -n "${OPENER_PID:-}" ]] && kill -0 "$OPENER_PID" 2>/dev/null; then
+		kill "$OPENER_PID" 2>/dev/null || true
+		wait "$OPENER_PID" 2>/dev/null || true
+	fi
 	if [[ -n "${TEMP_FILE:-}" && -f "$TEMP_FILE" ]]; then
 		rm -f "$TEMP_FILE"
 	fi
-	exit $exit_code
+	exit "$exit_code"
 }
 
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # Default values
 HOST="megamind.local"
-USER="jkh"
+REMOTE_USER="jkh"
 REMOTE_DIR="Src/Notebooks"
 
 # Parse options
@@ -87,7 +72,7 @@ while getopts "H:u:d:h" opt; do
 		HOST="$OPTARG"
 		;;
 	u)
-		USER="$OPTARG"
+		REMOTE_USER="$OPTARG"
 		;;
 	d)
 		REMOTE_DIR="$OPTARG"
@@ -102,28 +87,26 @@ while getopts "H:u:d:h" opt; do
 done
 shift $((OPTIND - 1))
 
-# Validate prerequisites
-if ! command -v ssh &>/dev/null; then
-	die "ssh command not found"
-fi
-
-if ! command -v open &>/dev/null; then
-	die "open command not found (are you on macOS?)"
-fi
+# Validate prerequisites and normalize the target consistently with s/sc.
+require_command ssh "ssh command not found"
+require_command open "open command not found (are you on macOS?)"
+HOST="$(remote_fqdn "$HOST")"
+REMOTE_TARGET="${REMOTE_USER}@${HOST}"
 
 # Create temporary file for capturing output
-TEMP_FILE=$(mktemp /tmp/jupyter-notebook.XXXXXX)
+TEMP_ROOT="${TMPDIR:-/tmp}"
+TEMP_FILE=$(mktemp "${TEMP_ROOT%/}/jupyter-notebook.XXXXXX")
 
 info "Remote Jupyter Notebook Launcher"
 info "================================"
-info "Host: ${USER}@${HOST}"
+info "Host: ${REMOTE_TARGET}"
 info "Directory: ${REMOTE_DIR}"
 info "Output captured to: ${TEMP_FILE}"
 echo ""
 
 # Test SSH connection first
 info "Testing SSH connection..."
-if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "${USER}@${HOST}" true 2>/dev/null; then
+if ! remote_ssh_available "$REMOTE_TARGET"; then
 	warn "SSH key authentication may not be set up"
 	info "You may need to enter your password..."
 fi
@@ -178,21 +161,22 @@ OPENER_PID=$!
 REMOTE_DIR_QUOTED=$(quote_for_remote_shell "$REMOTE_DIR")
 JUPYTER_CMD="if ! cd ${REMOTE_DIR_QUOTED} 2>/dev/null; then cd ~ || exit 1; fi; exec jupyter notebook --no-browser --ip=0.0.0.0"
 
-info "Connecting to ${USER}@${HOST}..."
+info "Connecting to ${REMOTE_TARGET}..."
 info "Starting Jupyter notebook..."
 echo ""
 warn "Press Ctrl+C to stop the notebook server"
 echo ""
 
 # Run the SSH command and tee output
-if ssh "${USER}@${HOST}" "$JUPYTER_CMD" 2>&1 | tee "$TEMP_FILE"; then
+SESSION_STATUS=0
+if ssh "$REMOTE_TARGET" "$JUPYTER_CMD" 2>&1 | tee "$TEMP_FILE"; then
 	success "Session ended normally"
 else
-	EXIT_CODE=$?
-	if [[ $EXIT_CODE -eq 130 ]]; then
+	SESSION_STATUS=$?
+	if [[ $SESSION_STATUS -eq 130 ]]; then
 		info "Interrupted by user"
 	else
-		error "SSH session ended with error code: $EXIT_CODE"
+		error "SSH session ended with error code: $SESSION_STATUS"
 	fi
 fi
 
@@ -200,3 +184,5 @@ fi
 if kill -0 $OPENER_PID 2>/dev/null; then
 	wait $OPENER_PID 2>/dev/null || true
 fi
+
+exit "$SESSION_STATUS"

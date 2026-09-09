@@ -17,33 +17,9 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-info() {
-	echo -e "${BLUE}[INFO]${NC} $*"
-}
-
-warn() {
-	echo -e "${YELLOW}[WARN]${NC} $*"
-}
-
-error() {
-	echo -e "${RED}[ERROR]${NC} $*" >&2
-}
-
-success() {
-	echo -e "${GREEN}[SUCCESS]${NC} $*"
-}
-
-die() {
-	error "$*"
-	exit 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
 
 usage() {
 	cat <<'EOF'
@@ -97,9 +73,7 @@ while getopts "drc:p:n:h" opt; do
 		;;
 	p)
 		PORT="$OPTARG"
-		if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [[ "$PORT" -lt 1 ]] || [[ "$PORT" -gt 65535 ]]; then
-			die "Invalid port number: $PORT"
-		fi
+		validate_port "$PORT"
 		;;
 	n)
 		NOTEBOOKS_DIR="$OPTARG"
@@ -145,18 +119,12 @@ JUPYTER_CMD=(jupyter notebook --no-browser --ip=0.0.0.0 "--port=${PORT}")
 if [[ $USE_DOCKER -eq 1 ]]; then
 	# Docker mode
 
-	# Check for Docker
-	if ! command -v docker &>/dev/null; then
-		die "Docker not found. Install from: https://www.docker.com/products/docker-desktop"
-	fi
+	require_docker \
+		"Docker not found. Install from: https://www.docker.com/products/docker-desktop" \
+		"Docker daemon is not running"
 
-	# Check if Docker daemon is running
-	if ! docker info &>/dev/null; then
-		die "Docker daemon is not running"
-	fi
-
-	# Check for nvidia-docker support
-	if ! docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi &>/dev/null; then
+	# Validate GPU access with the image that will actually run Jupyter.
+	if ! docker run --rm --gpus all --entrypoint nvidia-smi "$CONTAINER" &>/dev/null; then
 		warn "GPU support test failed - continuing anyway, but GPU may not be available"
 	fi
 
@@ -177,18 +145,26 @@ if [[ $USE_DOCKER -eq 1 ]]; then
 	warn "Press Ctrl+C to stop the server"
 	echo ""
 
-	# Run Docker container
-	docker run --rm \
-		--gpus all \
-		"${USER_PARAM[@]}" \
-		-v "${NOTEBOOKS_DIR}:/workspace/Notebooks" \
-		-it \
-		-p "${PORT}:${PORT}" \
-		--shm-size=1g \
-		--ulimit memlock=-1 \
-		--ulimit stack=67108864 \
-		"$CONTAINER" \
-		"${JUPYTER_CMD[@]}" "${ROOT_ARGS[@]}"
+	# Run Docker container. Build the argv incrementally so empty optional
+	# arrays also work with the Bash 3.2 shipped by macOS.
+	DOCKER_CMD=(docker run --rm --gpus all)
+	if [[ ${#USER_PARAM[@]} -gt 0 ]]; then
+		DOCKER_CMD+=("${USER_PARAM[@]}")
+	fi
+	DOCKER_CMD+=(
+		-v "${NOTEBOOKS_DIR}:/workspace/Notebooks"
+		-it
+		-p "${PORT}:${PORT}"
+		--shm-size=1g
+		--ulimit memlock=-1
+		--ulimit stack=67108864
+		"$CONTAINER"
+		"${JUPYTER_CMD[@]}"
+	)
+	if [[ ${#ROOT_ARGS[@]} -gt 0 ]]; then
+		DOCKER_CMD+=("${ROOT_ARGS[@]}")
+	fi
+	"${DOCKER_CMD[@]}"
 
 else
 	# Bare-metal mode

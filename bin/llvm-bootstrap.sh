@@ -17,33 +17,9 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-info() {
-	echo -e "${BLUE}[INFO]${NC} $*"
-}
-
-warn() {
-	echo -e "${YELLOW}[WARN]${NC} $*"
-}
-
-error() {
-	echo -e "${RED}[ERROR]${NC} $*" >&2
-}
-
-success() {
-	echo -e "${GREEN}[SUCCESS]${NC} $*"
-}
-
-die() {
-	error "$*"
-	exit 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
 
 usage() {
 	cat <<'EOF'
@@ -99,9 +75,7 @@ while getopts "hrj:b:p:d:" opt; do
 		;;
 	j)
 		JOBS="$OPTARG"
-		if ! [[ "$JOBS" =~ ^[0-9]+$ ]] || [[ "$JOBS" -lt 1 ]]; then
-			die "Invalid number of jobs: $JOBS"
-		fi
+		validate_positive_integer "number of jobs" "$JOBS"
 		;;
 	b)
 		BRANCH="$OPTARG"
@@ -202,8 +176,7 @@ if [[ ! -d "$LLVM_PROJ" ]]; then
 		[[ -n "$BRANCH" ]] && CLONE_CMD+=(-b "$BRANCH")
 		CLONE_CMD+=(https://github.com/llvm/llvm-project.git "$LLVM_PROJ")
 
-		printf -v CLONE_CMD_DISPLAY "%q " "${CLONE_CMD[@]}"
-		info "Running: ${CLONE_CMD_DISPLAY% }"
+		info "Running: $(shell_join "${CLONE_CMD[@]}")"
 		if ! "${CLONE_CMD[@]}"; then
 			die "Failed to clone LLVM project"
 		fi

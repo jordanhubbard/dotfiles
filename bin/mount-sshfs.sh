@@ -16,33 +16,11 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-info() {
-	echo -e "${BLUE}[INFO]${NC} $*"
-}
-
-warn() {
-	echo -e "${YELLOW}[WARN]${NC} $*"
-}
-
-error() {
-	echo -e "${RED}[ERROR]${NC} $*" >&2
-}
-
-success() {
-	echo -e "${GREEN}[SUCCESS]${NC} $*"
-}
-
-die() {
-	error "$*"
-	exit 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/shell-common.sh
+source "${SCRIPT_DIR}/lib/shell-common.sh"
+# shellcheck source=lib/remote-common.sh
+source "${SCRIPT_DIR}/lib/remote-common.sh"
 
 usage() {
 	cat <<EOF
@@ -73,9 +51,9 @@ EOF
 
 # Check prerequisites
 check_prerequisites() {
-	if ! command -v sshfs &>/dev/null; then
-		die "sshfs not found. Install with: brew install --cask macfuse && brew install gromgit/fuse/sshfs-mac"
-	fi
+	require_command ssh "ssh command not found"
+	require_command sshfs \
+		"sshfs not found. Install with: brew install --cask macfuse && brew install gromgit/fuse/sshfs-mac"
 }
 
 # Check if mount point is already mounted
@@ -88,7 +66,7 @@ is_mounted() {
 }
 
 # Default values
-USER="root"
+REMOTE_USER="root"
 PORT="22"
 REMOTE_PATH="/dos/"
 LOCAL_PATH=""
@@ -97,13 +75,11 @@ LOCAL_PATH=""
 while getopts "u:p:r:l:h" opt; do
 	case "$opt" in
 	u)
-		USER="$OPTARG"
+		REMOTE_USER="$OPTARG"
 		;;
 	p)
 		PORT="$OPTARG"
-		if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [[ "$PORT" -lt 1 ]] || [[ "$PORT" -gt 65535 ]]; then
-			die "Invalid port number: $PORT"
-		fi
+		validate_port "$PORT"
 		;;
 	r)
 		REMOTE_PATH="$OPTARG"
@@ -134,17 +110,20 @@ if [[ -z "$HOST" ]]; then
 	die "Hostname cannot be empty"
 fi
 
+check_prerequisites
+
 # Set default local path if not specified
 if [[ -z "$LOCAL_PATH" ]]; then
 	LOCAL_PATH="${HOME}/${HOST}"
 fi
 
-# Construct full hostname
-FULL_HOST="${HOST}.local"
+# Construct the target without appending .local to an existing FQDN.
+FULL_HOST="$(remote_fqdn "$HOST")"
+REMOTE_TARGET="${REMOTE_USER}@${FULL_HOST}"
 
 info "SSHFS Mount Configuration"
 info "========================="
-info "Remote: ${USER}@${FULL_HOST}:${REMOTE_PATH}"
+info "Remote: ${REMOTE_TARGET}:${REMOTE_PATH}"
 info "Local:  ${LOCAL_PATH}"
 info "Port:   ${PORT}"
 echo ""
@@ -170,8 +149,8 @@ if [[ -n "$(ls -A "$LOCAL_PATH" 2>/dev/null)" ]]; then
 fi
 
 # Test SSH connectivity first
-info "Testing SSH connection to ${USER}@${FULL_HOST}:${PORT}..."
-if ! ssh -p "$PORT" -o ConnectTimeout=5 -o BatchMode=yes "${USER}@${FULL_HOST}" true 2>/dev/null; then
+info "Testing SSH connection to ${REMOTE_TARGET}:${PORT}..."
+if ! remote_ssh_available "$REMOTE_TARGET" "$PORT"; then
 	warn "SSH connection test failed. This might be normal if you need password/interactive auth."
 	info "Proceeding with mount attempt..."
 fi
@@ -187,7 +166,7 @@ MOUNT_OPTIONS=(
 	"volname=${HOST}"
 )
 
-REMOTE_SPEC="${USER}@${FULL_HOST}:${REMOTE_PATH}"
+REMOTE_SPEC="${REMOTE_TARGET}:${REMOTE_PATH}"
 MOUNT_OPTIONS_CSV="$(
 	IFS=,
 	echo "${MOUNT_OPTIONS[*]}"
@@ -195,8 +174,7 @@ MOUNT_OPTIONS_CSV="$(
 SSHFS_CMD=(sshfs "$REMOTE_SPEC" "$LOCAL_PATH" "-o${MOUNT_OPTIONS_CSV}")
 
 info "Mounting..."
-printf -v SSHFS_CMD_DISPLAY "%q " "${SSHFS_CMD[@]}"
-info "Command: ${SSHFS_CMD_DISPLAY% }"
+info "Command: $(shell_join "${SSHFS_CMD[@]}")"
 
 # Attempt to mount
 if "${SSHFS_CMD[@]}"; then
@@ -207,7 +185,7 @@ if "${SSHFS_CMD[@]}"; then
 else
 	error "Failed to mount filesystem"
 	error "Troubleshooting:"
-	error "  1. Check SSH connection: ssh -p ${PORT} ${USER}@${FULL_HOST}"
+	error "  1. Check SSH connection: ssh -p ${PORT} ${REMOTE_TARGET}"
 	error "  2. Verify remote path exists: ${REMOTE_PATH}"
 	error "  3. Ensure SSHFS/macFUSE is properly installed"
 	exit 1

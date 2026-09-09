@@ -22,8 +22,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=remote-common.sh
-source "${SCRIPT_DIR}/remote-common.sh"
+# shellcheck source=lib/remote-common.sh
+source "${SCRIPT_DIR}/lib/remote-common.sh"
 
 usage() {
 	echo "Usage: s [ssh-options...] [-r] [user@]hostname [command...]" >&2
@@ -85,5 +85,18 @@ done
 
 remaining=("${args[@]:$i}")
 
-target="$(remote_resolve_host "${root_flag[@]}" "$host")"
-exec "${SSH_CMD:-ssh}" "${ssh_opts[@]}" "$target" "${remaining[@]+"${remaining[@]}"}"
+if [[ ${#root_flag[@]} -gt 0 ]]; then
+	target="$(remote_resolve_host -r "$host")"
+else
+	target="$(remote_resolve_host "$host")"
+fi
+
+ssh_command=("${SSH_CMD:-ssh}")
+if [[ ${#ssh_opts[@]} -gt 0 ]]; then
+	ssh_command+=("${ssh_opts[@]}")
+fi
+ssh_command+=("$target")
+if [[ ${#remaining[@]} -gt 0 ]]; then
+	ssh_command+=("${remaining[@]}")
+fi
+exec "${ssh_command[@]}"

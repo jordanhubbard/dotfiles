@@ -38,7 +38,6 @@ import sys
 import os
 import signal
 import subprocess
-import time
 import re
 
 def parse_duration(duration_str):
@@ -112,7 +111,7 @@ Options:
                          signal, send KILL signal after this duration
       --preserve-status  exit with the same status as COMMAND, even when the
                          command times out
-      --foreground       run COMMAND in the foreground (default behavior)
+      --foreground       do not create a separate process group for COMMAND
       --help             display this help and exit
 
 Exit status:
@@ -143,7 +142,7 @@ def main():
     term_signal = signal.SIGTERM
     kill_after = None
     preserve_status = False
-    foreground = True
+    foreground = False
 
     # Parse options
     i = 0
@@ -221,8 +220,6 @@ def main():
     # Wait for process with timeout
     timed_out = False
     killed = False
-    start_time = time.time()
-
     try:
         returncode = process.wait(timeout=duration)
     except subprocess.TimeoutExpired:
