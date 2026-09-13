@@ -826,7 +826,7 @@ set-aliases() {
     alias rehash='hash -r'
 
     # AI aliases
-    alias cx='codex --sandbox danger-full-access --ask-for-approval never'
+    alias cx='codex --sandbox danger-full-access --ask-for-approval never $*'
 }
 
 # ============================================================================
